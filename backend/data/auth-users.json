@@ -1,0 +1,32 @@
+{
+  "nextId": 4,
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "pbkdf2$a590d4cd529bc951995ea0b325d9c8bf$QWuNwvjLe/hpY+9LEe9LYvKhgRGWAMuoWDPNcW042rU=",
+      "email": "admin@mnm.local",
+      "full_name": "System Admin",
+      "role": "admin",
+      "linked_agent_id": null
+    },
+    {
+      "id": 2,
+      "username": "agent",
+      "password": "pbkdf2$79d5790ff18132656447252c243bc7d1$GQFrHl6ry8eO1gxV6BMabn55+BdHaV4md81NLxB09sk=",
+      "email": "agent@mnm.local",
+      "full_name": "Demo Agent",
+      "role": "agent",
+      "linked_agent_id": null
+    },
+    {
+      "id": 3,
+      "username": "user",
+      "password": "pbkdf2$65c7c7cc5eaee90f85e1c81d0f85315a$fWkDCSdgdq05l29pD6fRXGBsMvTGDdGWJqd+ZEcijts=",
+      "email": "user@mnm.local",
+      "full_name": "Demo User",
+      "role": "user",
+      "linked_agent_id": null
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+const express = require('express');
+const controller = require('../controllers/api.controller');
+const { requireRole } = require('../middleware/auth');
+
+const router = express.Router();
+
+router.get('/health', controller.health);
+router.get('/properties/map-data', controller.propertiesMap);
+router.get('/properties/nearby/search', controller.propertiesNearby);
+router.get('/properties/:id/images', controller.propertyImagesList);
+router.post('/properties/:id/images', requireRole('agent', 'admin'), controller.propertyImageCreate);
+router.post('/properties/images/:imageId/primary', requireRole('agent', 'admin'), controller.propertyImagePrimary);
+router.post('/properties/images/:imageId/reorder', requireRole('agent', 'admin'), controller.propertyImageReorder);
+router.delete('/properties/images/:imageId', requireRole('agent', 'admin'), controller.propertyImageDelete);
+router.get('/properties', controller.propertiesList);
+router.get('/properties/:id', controller.propertyDetail);
+router.post('/properties', requireRole('agent', 'admin'), controller.propertyCreate);
+router.put('/properties/:id', requireRole('agent', 'admin'), controller.propertyUpdate);
+router.patch('/properties/:id/stage', requireRole('agent', 'admin'), controller.propertyStageUpdate);
+router.delete('/properties/:id', requireRole('agent', 'admin'), controller.propertyDelete);
+router.get('/amenities', controller.amenitiesList);
+router.get('/amenities/nearby', controller.amenitiesNearby);
+router.get('/agents', controller.agentsList);
+router.get('/agents/:id', controller.agentDetail);
+router.post('/leads', controller.leadCreate);
+router.patch('/leads/:id/stage', requireRole('agent', 'admin'), controller.leadStageUpdate);
+router.post('/appointments', requireRole('agent', 'admin'), controller.appointmentCreate);
+router.get('/dashboard', controller.dashboard);
+router.get('/wishlist', controller.wishlist);
+router.post('/wishlist/:propertyId/toggle', controller.wishlistToggle);
+router.delete('/wishlist/:propertyId', controller.wishlistRemove);
+router.get('/compare', controller.compare);
+router.post('/compare/:propertyId/toggle', controller.compareToggle);
+router.delete('/compare/:propertyId', controller.compareRemove);
+router.get('/saved-searches', controller.savedSearches);
+router.post('/saved-searches', controller.savedSearchCreate);
+router.delete('/saved-searches/:searchId', controller.savedSearchDelete);
+router.post('/auth/login', controller.login);
+router.get('/auth/me', controller.me);
+router.put('/auth/profile', controller.profileUpdate);
+router.post('/auth/register', controller.register);
+router.get('/tasks', controller.tasksList);
+router.post('/tasks', controller.tasksCreate);
+router.delete('/tasks/:id', controller.tasksDelete);
+
+module.exports = router;
