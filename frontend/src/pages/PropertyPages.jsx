@@ -9,7 +9,7 @@ const fallbackProperties = [
     price: "12 tỷ",
     address: "Nguyễn Huệ, Quận 1, TP.HCM",
     area: 120,
-    type: "Căn hộ",
+    type: "apartment",
     status: "Đang bán",
     agent: "Nguyễn Văn A",
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200&auto=format&fit=crop",
@@ -21,7 +21,7 @@ const fallbackProperties = [
     price: "25 tỷ",
     address: "Thảo Điền, TP.Thủ Đức",
     area: 250,
-    type: "Nhà phố",
+    type: "house",
     status: "Nổi bật",
     agent: "Trần Thị B",
     image: "https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=1200&auto=format&fit=crop",
@@ -33,7 +33,7 @@ const fallbackProperties = [
     price: "5 tỷ",
     address: "Bình Chánh, TP.HCM",
     area: 500,
-    type: "Đất nền",
+    type: "land",
     status: "Mới",
     agent: "Lê Văn C",
     image: "https://images.unsplash.com/photo-1448630360428-65456885c650?q=80&w=1200&auto=format&fit=crop",
@@ -188,12 +188,53 @@ function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlis
           <span><strong>{p.agentName}</strong></span>
         </div>
         <div className="listing-actions">
-          <a className="btn-geo-primary" href={`/property-detail?id=${p.id}`}>Chi tiết</a>
-          <a className="btn-geo-secondary" href="/compare">So sánh</a>
-          {onWishlist && <button type="button" className="btn-geo-secondary" onClick={() => onWishlist(property)}>{wishlistActive ? 'Bỏ lưu' : 'Lưu tin'}</button>}
-          {onCompare && <button type="button" className="btn-geo-secondary" onClick={() => onCompare(property)}>{compareActive ? 'Bỏ so sánh' : 'So sánh'}</button>}
-          {onDelete && <button type="button" className="btn-geo-secondary danger-btn" onClick={() => onDelete(property)}>Xóa</button>}
-        </div>
+
+  <a
+    className="btn-geo-primary"
+    href={`/property-detail?id=${p.id}`}
+  >
+    Chi tiết
+  </a>
+
+  <a
+    className="btn-geo-secondary"
+    href="/compare"
+  >
+    So sánh
+  </a>
+
+  {onWishlist && (
+  <button
+    type="button"
+    className="btn-geo-secondary"
+    onClick={() => {
+
+      if (!wishlistActive) {
+        window.location.href = "/wishlist";
+      }
+
+      onWishlist(property);
+
+    }}
+  >
+    {wishlistActive
+      ? "Bỏ lưu"
+      : "Lưu tin"}
+  </button>
+)}
+
+
+  {onDelete && (
+    <button
+      type="button"
+      className="btn-geo-secondary danger-btn"
+      onClick={() => onDelete(property)}
+    >
+      Xóa
+    </button>
+  )}
+
+</div>
       </div>
     </article>
   );
@@ -289,35 +330,135 @@ export function PropertyListPage() {
     setSavedSearches(Array.isArray(searches) ? searches : []);
   };
 
-  const loadItems = async (nextFilters = filters, nextBbox = bbox) => {
-    setLoading(true);
-    const query = {
-      type: nextFilters.type || undefined,
-      status: nextFilters.status || undefined,
-      q: nextFilters.q || undefined,
-      priceMin: nextFilters.priceMin || undefined,
-      priceMax: nextFilters.priceMax || undefined,
-      areaMin: nextFilters.areaMin || undefined,
-      areaMax: nextFilters.areaMax || undefined,
-      sort: nextFilters.sort || 'newest',
-      bbox: nextBbox || undefined,
-      limit: 50,
-    };
-    const [properties, map] = await Promise.all([
-      api.properties(query),
-      api.mapData({ ...query, limit: 200 }),
-    ]);
-    if (Array.isArray(properties) && properties.length) setItems(properties);
-    if (map) setMapData(map);
-    setLoading(false);
+  const loadItems = async (
+  nextFilters = filters,
+  nextBbox = bbox
+) => {
+  setLoading(true);
+
+  const query = {
+    type: nextFilters.type || undefined,
+    status: nextFilters.status || undefined,
+    q: nextFilters.q || undefined,
+    priceMin: nextFilters.priceMin || undefined,
+    priceMax: nextFilters.priceMax || undefined,
+    areaMin: nextFilters.areaMin || undefined,
+    areaMax: nextFilters.areaMax || undefined,
+    sort: nextFilters.sort || "newest",
+    bbox: nextBbox || undefined,
+    limit: 50,
   };
+
+  let properties = await api.properties(query);
+
+  /* FALLBACK FILTER */
+  if (!properties || !properties.length) {
+    properties = fallbackProperties;
+  }
+
+  let filtered = [...properties];
+
+  /* TYPE */
+  if (nextFilters.type) {
+    filtered = filtered.filter(
+      (item) =>
+        item.property_type === nextFilters.type ||
+        item.type === nextFilters.type
+    );
+  }
+
+  /* KEYWORD */
+  if (nextFilters.q) {
+    const keyword =
+      nextFilters.q.toLowerCase();
+
+    filtered = filtered.filter(
+      (item) =>
+        item.title
+          ?.toLowerCase()
+          .includes(keyword) ||
+        item.address
+          ?.toLowerCase()
+          .includes(keyword)
+    );
+  }
+
+  /* PRICE */
+  if (nextFilters.priceMin) {
+    filtered = filtered.filter(
+      (item) =>
+        Number(item.price) >=
+        Number(nextFilters.priceMin)
+    );
+  }
+
+  if (nextFilters.priceMax) {
+    filtered = filtered.filter(
+      (item) =>
+        Number(item.price) <=
+        Number(nextFilters.priceMax)
+    );
+  }
+
+  /* AREA */
+  if (nextFilters.areaMin) {
+    filtered = filtered.filter(
+      (item) =>
+        Number(item.area) >=
+        Number(nextFilters.areaMin)
+    );
+  }
+
+  if (nextFilters.areaMax) {
+    filtered = filtered.filter(
+      (item) =>
+        Number(item.area) <=
+        Number(nextFilters.areaMax)
+    );
+  }
+
+  /* SORT */
+  if (nextFilters.sort === "price_asc") {
+    filtered.sort((a, b) => a.price - b.price);
+  }
+
+  if (nextFilters.sort === "price_desc") {
+    filtered.sort((a, b) => b.price - a.price);
+  }
+
+  if (nextFilters.sort === "area_asc") {
+    filtered.sort((a, b) => a.area - b.area);
+  }
+
+  setItems(filtered);
+
+  const map = await api.mapData({
+    ...query,
+    limit: 200,
+  });
+
+  if (map) {
+    setMapData(map);
+  }
+
+  setLoading(false);
+};
 
   useEffect(() => {
     loadItems();
     syncCollections();
   }, []);
 
-  const handleChange = (field, value) => setFilters((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => {
+  const updated = {
+    ...filters,
+    [field]: value,
+  };
+
+  setFilters(updated);
+
+  loadItems(updated);
+};
   const handleSubmit = (event) => { event.preventDefault(); loadItems(filters); };
   const handleReset = () => {
     const cleared = { type: "", status: "", q: "", priceMin: "", priceMax: "", areaMin: "", areaMax: "", sort: "newest" };
@@ -385,7 +526,18 @@ export function PropertyListPage() {
               <span className="results-label"> bất động sản phù hợp</span>
               {loading && <span className="results-label"> · đang tải</span>}
             </div>
-            <select className="sort-select" value={filters.sort} onChange={(e) => handleChange('sort', e.target.value)}>
+            <select
+  className="sort-select"
+  value={filters.sort}
+  onChange={(e) => {
+    handleChange("sort", e.target.value);
+
+    loadItems({
+      ...filters,
+      sort: e.target.value,
+    });
+  }}
+>
               <option value="newest">Mới nhất</option>
               <option value="price_asc">Giá tăng dần</option>
               <option value="price_desc">Giá giảm dần</option>
@@ -560,7 +712,33 @@ export function ComparePage() {
                     <span>👤 {p.agentName}</span>
                     <span>📍 {property.address}</span>
                   </div>
-                  <div className="listing-actions"><button type="button" className="btn-geo-secondary danger-btn" onClick={async () => { await api.removeCompare(property.id); refresh(); }}>Bỏ so sánh</button></div>
+                 <div className="listing-actions">
+
+  <button
+    type="button"
+    className="btn-geo-secondary danger-btn"
+    onClick={() => {
+
+      const confirmDelete = window.confirm(
+        "Bạn có muốn bỏ bất động sản này khỏi danh sách so sánh không?"
+      );
+
+      if (!confirmDelete) return;
+
+      setCompareItems((prev) =>
+        prev.filter(
+          (item) => item.id !== property.id
+        )
+      );
+
+      api.removeCompare(property.id);
+
+    }}
+  >
+    Bỏ so sánh
+  </button>
+
+</div>
                 </div>
               </article>
             );

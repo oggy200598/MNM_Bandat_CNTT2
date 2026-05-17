@@ -11,6 +11,7 @@ import {
   ImagesManagePage,
   LeadFormPage,
   LoginPage,
+  LogoutPage,
   PasswordResetPage,
   ProfilePage,
   PropertyDetailPage,
@@ -42,6 +43,7 @@ const INTERNAL_ROUTES = [
   "/appointments/create",
   "/login",
   "/register",
+  "/logout",
   "/password-reset",
   "/wishlist",
   "/lead-form",
@@ -103,6 +105,8 @@ function App() {
   if (route === "/appointments/create") return <AppointmentCreatePage />;
   if (route === "/login") return <LoginPage />;
   if (route === "/register") return <RegisterPage />;
+  if (route === "/logout") return <LogoutPage />;
+  if (route === "/properties/create") return <PropertyFormPage />;
   if (route === "/password-reset") return <PasswordResetPage />;
   if (route === "/wishlist") return <WishlistPage />;
   if (route === "/lead-form") return <LeadFormPage />;
