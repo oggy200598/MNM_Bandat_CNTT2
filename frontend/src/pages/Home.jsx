@@ -225,14 +225,15 @@ function Home() {
           <div className="hero-vignette" />
         </div>
         <div className="hero-content">
-          <div className="hero-tag">✦ Nền tảng bất động sản GIS hàng đầu</div>
+          <div className="hero-tag">✦ Nền tảng bất động sản hàng đầu</div>
           <h1 className="hero-h1">
             Khám phá bất động sản<br />
             <em>đẳng cấp</em> tại TP.HCM
           </h1>
           <p className="hero-sub">
-            Hơn {stats.property_total.toLocaleString("vi-VN")} bất động sản trên bản đồ tương tác PostGIS.
-            Phân tích vị trí, tiện ích lân cận và giá thị trường theo thời gian thực.
+             Khám phá hơn {stats.property_total.toLocaleString("vi-VN")} bất động sản đa dạng 
+      từ căn hộ, nhà phố đến biệt thự cao cấp. 
+      Dễ dàng tìm kiếm theo vị trí, mức giá và nhu cầu thực tế.
           </p>
           <div className="hero-search-wrap">
             <form className="hero-search" onSubmit={(e) => e.preventDefault()}>
@@ -328,19 +329,35 @@ function Home() {
         </div>
       </section>
 
-      {/* ── VALUE / STATS ── */}
-      <section className="value-section">
-        <div className="container">
-          <div className="value-grid">
-            <div className="value-left">
-              <p className="section-eye">Tại sao chọn chúng tôi</p>
-              <h2 className="section-h">Nền tảng GIS<br /><em>thế hệ mới</em></h2>
-              <p>Kết hợp dữ liệu địa lý PostGIS chính xác với AI phân tích thị trường, giúp bạn đưa ra quyết định đầu tư thông minh hơn và nhanh hơn bao giờ hết.</p>
-              <div className="value-cta">
-                <a href="/properties" className="btn-gold">Bắt đầu ngay →</a>
-                <a href="/about" className="btn-ghost">Tìm hiểu thêm</a>
-              </div>
-            </div>
+     {/* ── VALUE / STATS ── */}
+<section className="value-section">
+  <div className="container">
+    <div className="value-grid">
+      <div className="value-left">
+        <p className="section-eye">Tại sao chọn chúng tôi</p>
+
+        <h2 className="section-h">
+          Khám phá bất động sản<br />
+          <em>phù hợp với bạn</em>
+        </h2>
+
+        <p>
+          Chúng tôi mang đến nền tảng tìm kiếm bất động sản hiện đại,
+          giúp bạn dễ dàng khám phá nhà ở, căn hộ, đất nền và nhiều
+          lựa chọn hấp dẫn khác với thông tin rõ ràng, hình ảnh trực quan
+          và vị trí thuận tiện.
+        </p>
+
+        <div className="value-cta">
+          <a href="/properties" className="btn-gold">
+            Bắt đầu ngay →
+          </a>
+
+          <a href="/about" className="btn-ghost">
+            Tìm hiểu thêm
+          </a>
+        </div>
+      </div>
             <div className="value-right">
               <div className="vstat-card accent">
                 <div className="vstat-num">{stats.property_total.toLocaleString("vi-VN")}<span>+</span></div>

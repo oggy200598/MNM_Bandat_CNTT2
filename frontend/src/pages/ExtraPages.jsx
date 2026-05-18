@@ -37,6 +37,7 @@ function Field({ label, type = "text", placeholder, as = "input", name, ...props
   );
 }
 
+
 function PropertyMiniCard({ p }) {
   const item = normalizeProperty(p);
   return (
@@ -153,8 +154,175 @@ export function PropertyDetailPage() {
           {similar.length > 0 && <div className="extra-card"><h3>Tin tương tự</h3><div className="mini-grid">{similar.map((item) => <PropertyMiniCard p={item} key={item.id} />)}</div></div>}
         </section>
         <aside className="detail-sidebar-copy">
-          <div className="extra-card sticky-card"><div className="price-big">{p.priceText}</div><a className="btn-geo-primary full" href="/lead-form">Liên hệ tư vấn</a><a className="btn-geo-secondary full" href="/wishlist">Lưu tin</a></div>
-        </aside>
+
+
+  <div className="extra-card sticky-card">
+    <div className="price-big">{p.priceText}</div>
+
+    <div className="sidebar-mini-info">
+      <span>📍 {p.address}</span>
+      <span>📐 {p.area} m²</span>
+      <span>🏠 {p.typeText}</span>
+    </div>
+
+    <a className="btn-geo-primary full" href="/lead-form">
+      Liên hệ tư vấn
+    </a>
+
+    <a className="btn-geo-secondary full" href="/wishlist">
+      Lưu tin
+    </a>
+  </div>
+
+<div className="extra-card agent-card">
+
+  <div className="agent-title-row">
+
+    <div className="agent-title-icon">
+      👨‍💼
+    </div>
+
+    <div>
+      <p className="section-mini-title">
+        MÔI GIỚI PHỤ TRÁCH
+      </p>
+
+      <span className="agent-subtitle">
+        Chuyên viên tư vấn bất động sản
+      </span>
+    </div>
+
+  </div>
+
+  <div className="agent-box">
+
+    <div className="agent-avatar-wrap">
+
+      <img
+        src={
+          property?.agent?.avatar ||
+          `https://ui-avatars.com/api/?background=d4af37&color=111&name=${encodeURIComponent(
+            p.agentName || "Agent"
+          )}`
+        }
+        alt={p.agentName}
+        className="agent-avatar"
+      />
+
+      <div className="agent-online-dot"></div>
+
+    </div>
+
+    <div className="agent-info">
+
+      <h4>
+        {p.agentName || "Chưa cập nhật"}
+      </h4>
+
+      <span className="agent-position">
+        {property?.agent?.position ||
+          "Tư vấn bất động sản"}
+      </span>
+
+      <div className="agent-contact">
+
+        {property?.agent?.phone && (
+          <a
+            href={`tel:${property.agent.phone}`}
+            className="agent-contact-item"
+          >
+            <span>📞</span>
+            {property.agent.phone}
+          </a>
+        )}
+
+        {property?.agent?.email && (
+          <a
+            href={`mailto:${property.agent.email}`}
+            className="agent-contact-item"
+          >
+            <span>✉️</span>
+            {property.agent.email}
+          </a>
+        )}
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div className="agent-rating">
+
+    <div className="agent-stars">
+      {"⭐".repeat(
+        Math.round(
+          property?.agent?.rating || 5
+        )
+      )}
+    </div>
+
+    <span>
+      {property?.agent?.rating || 5}.0 đánh giá
+    </span>
+
+  </div>
+
+  
+  <div className="agent-review-box">
+
+    <select className="agent-select">
+
+      <option>⭐ 1 sao</option>
+      <option>⭐⭐ 2 sao</option>
+      <option>⭐⭐⭐ 3 sao</option>
+      <option>⭐⭐⭐⭐ 4 sao</option>
+      <option>⭐⭐⭐⭐⭐ 5 sao</option>
+
+    </select>
+
+    <textarea
+      placeholder="Chia sẻ cảm nhận của bạn về môi giới..."
+      className="agent-review-input"
+    />
+
+    <button className="btn-geo-primary full">
+      Gửi đánh giá
+    </button>
+
+  </div>
+
+</div>
+
+ 
+  <div className="extra-card">
+    <p className="section-mini-title">
+      TIN ĐĂNG TƯƠNG TỰ
+    </p>
+
+    {similar.length > 0 ? (
+      similar.slice(0, 2).map((item) => (
+        <div className="similar-mini-item" key={item.id}>
+          <img
+            src={item.image || p.imageUrl}
+            alt=""
+          />
+
+          <div>
+            <strong>{item.title}</strong>
+            <p>{formatPrice(item.price)}</p>
+          </div>
+        </div>
+      ))
+    ) : (
+      <p className="muted-line">
+        Chưa có tin đăng tương tự.
+      </p>
+    )}
+  </div>
+
+</aside>
       </main>
     </div>
   );
@@ -162,11 +330,67 @@ export function PropertyDetailPage() {
 
 export function LoginPage() {
   const [message, setMessage] = useState("");
+
   const submit = async (event) => {
+
     event.preventDefault();
+
     const form = new FormData(event.currentTarget);
-    const result = await api.login({ username: form.get("username"), password: form.get("password") });
-    setMessage(result?.username ? `Đăng nhập thành công: ${result.full_name || result.username} (${result.role || "user"})` : "Không tìm thấy tài khoản trong backend.");
+
+    const result = await api.login({
+      username: form.get("username"),
+      password: form.get("password")
+    });
+
+    console.log(result);
+
+    if (result) {
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(result)
+      );
+      window.dispatchEvent(
+  new Event("storage")
+);
+
+      setMessage(
+        `Đăng nhập thành công: ${
+          result.full_name ||
+          result.username
+        } (${result.role || "user"})`
+      );
+
+      setTimeout(() => {
+
+  if (result.role === "admin") {
+
+    window.location.href =
+      "/admin-dashboard";
+
+  } else if (
+    result.role === "agent"
+  ) {
+
+    window.location.href =
+      "/dashboard";
+
+  } else {
+
+    window.location.href =
+      "/customer-dashboard";
+
+  }
+
+}, 1000);
+
+    } else {
+
+      setMessage(
+        "Sai tài khoản hoặc mật khẩu."
+      );
+
+    }
   };
 
   return <PageShell eyebrow="Truy cập tài khoản" title="Đăng nhập" maxWidth="640px"><form className="extra-card form-stack" onSubmit={submit}><label className="extra-field"><span>Tên đăng nhập</span><input name="username" placeholder="admin" /></label><label className="extra-field"><span>Mật khẩu</span><input name="password" type="password" placeholder="••••••••" /></label><button className="btn-geo-primary">Đăng nhập</button>{message && <p className="muted-line">{message}</p>}<p className="muted-line">Dùng nhanh: admin/admin123 · agent/agent123 · user/user123</p><p className="muted-line">Chưa có tài khoản? <a href="/register">Đăng ký</a> · <a href="/password-reset">Quên mật khẩu</a></p></form></PageShell>;
@@ -174,6 +398,11 @@ export function LoginPage() {
 
 export function RegisterPage() {
   const [message, setMessage] = useState("");
+   const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState(false);
   const submit = async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -184,10 +413,59 @@ export function RegisterPage() {
       return;
     }
     const result = await api.register({ username: form.get("username"), password, full_name: form.get("full_name"), email: form.get("email"), role: form.get("role") });
-    setMessage(result?.username ? `Đã tạo tài khoản: ${result.full_name || result.username} (${result.role || "user"})` : "Chưa tạo được tài khoản.");
+    console.log(result);
+
+    if (result) {
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(result)
+      );
+
+      setMessage(
+        `Đăng ký thành công: ${
+          result.full_name ||
+          result.username
+        }`
+      );
+
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
+
+    } else {
+
+      setMessage(
+        "Đăng ký thất bại."
+      );
+
+    }
+
   };
 
   return <PageShell eyebrow="Tạo tài khoản" title="Đăng ký" maxWidth="760px"><form className="extra-card form-grid" onSubmit={submit}><label className="extra-field"><span>Tên đăng nhập</span><input name="username" required /></label><label className="extra-field"><span>Họ tên</span><input name="full_name" /></label><label className="extra-field"><span>Email</span><input name="email" type="email" /></label><label className="extra-field"><span>Vai trò</span><select name="role"><option value="user">Khách hàng</option><option value="agent">Môi giới</option><option value="admin">Quản trị</option></select></label><Field label="Mật khẩu" name="password" type="password" required /><Field label="Nhập lại mật khẩu" name="confirm_password" type="password" required /><button className="btn-geo-primary form-wide">Tạo tài khoản</button>{message && <p className="muted-line form-wide">{message}</p>}</form></PageShell>;
+}
+
+export function LogoutPage() {
+
+  useEffect(() => {
+
+    const confirmed = window.confirm(
+      "Bạn có muốn đăng xuất không?"
+    );
+
+    if (confirmed) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      window.location.href = "/";
+    } else {
+      window.history.back();
+    }
+
+  }, []);
+
+  return null;
 }
 
 export function WishlistPage() {
@@ -202,7 +480,42 @@ export function WishlistPage() {
     refresh();
   }, []);
 
-  return <PageShell eyebrow="Bất động sản đã lưu" title="Danh sách đã lưu"><div className="extra-top-actions"><a href="/properties" className="btn-geo-secondary">← Quay lại danh sách bất động sản</a></div><div className="mini-grid">{items.map((p) => <article key={p.id}><PropertyMiniCard p={p} /><div className="mini-actions"><button className="btn-geo-secondary danger-btn" type="button" onClick={async () => { await api.removeWishlist(p.id); refresh(); }}>Xóa khỏi lưu</button></div></article>)}</div></PageShell>;
+  return <PageShell eyebrow="Bất động sản đã lưu" title="Danh sách đã lưu"><div className="extra-top-actions"><a href="/properties" className="btn-geo-secondary">← Quay lại danh sách bất động sản</a></div>
+  <div className="mini-grid">
+  {items.map((p) => (
+    <article key={p.id} className="wishlist-card">
+
+      <PropertyMiniCard p={p} />
+
+      <div className="wishlist-delete">
+        <button
+  className="btn-geo-secondary danger-btn"
+  type="button"
+  onClick={() => {
+
+    const confirmDelete = window.confirm(
+      "Bạn có muốn xóa khỏi danh sách lưu không?"
+    );
+
+    if (!confirmDelete) return;
+
+    setItems((prev) =>
+      prev.filter(
+        (item) => item.id !== p.id
+      )
+    );
+
+    api.removeWishlist(p.id);
+
+  }}
+>
+  Xóa khỏi lưu
+</button>
+      </div>
+
+    </article>
+  ))}
+</div></PageShell>;
 }
 
 export function LeadFormPage() {

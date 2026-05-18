@@ -478,21 +478,42 @@
 
 .amenity-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 18px;
-  margin-top: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 36px;
 }
 
 .amenity-card {
-  padding: 22px;
+  padding: 28px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #fffdf9, #fff5e8);
+  border: 1px solid rgba(216,188,135,0.2);
+  transition: 0.3s ease;
+}
+
+.amenity-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.08);
 }
 
 .amenity-card h6 {
-  color: var(--gold);
-  font-size: 12px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
+  display: inline-block;
+  background: #fff1dc;
+  color: #c48c46;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  margin-bottom: 16px;
+}
+
+.amenity-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+
+.amenity-card p {
+  color: #6d6258;
+  line-height: 1.7;
 }
 
 .compare-page-body {
@@ -515,14 +536,12 @@
 }
 
 .compare-hero-pills span,
-.compare-card-badges span {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
+.compare-card-badges span{
+  background: rgba(216,188,135,.12);
+  border: 1px solid rgba(216,188,135,.25);
+  color: var(--gold);
+  border-radius: 999px;
+  padding: 8px 16px;
 }
 
 .compare-grid {
@@ -538,6 +557,7 @@
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
+
 
 .compare-table-wrapper {
   overflow-x: auto;

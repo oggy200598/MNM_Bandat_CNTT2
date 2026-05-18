@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { StrictMode, useEffect } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 
@@ -12,7 +12,13 @@ import App from "./App.jsx";
    LAYOUT
 ═══════════════════════════════════════ */
 function Layout({ children }) {
+
+  const [user, setUser] = useState(
+  JSON.parse(localStorage.getItem("user"))
+);
+
   useEffect(() => {
+
     /* ── TITLE ── */
     document.title =
       "GeoEstate · Nền Tảng Bất Động Sản Thông Minh";
@@ -171,6 +177,18 @@ function Layout({ children }) {
       "keydown",
       handleKeydown
     );
+    const syncUser = () => {
+  setUser(
+    JSON.parse(
+      localStorage.getItem("user")
+    )
+  );
+};
+
+window.addEventListener(
+  "storage",
+  syncUser
+);
 
     /* CLEANUP */
     return () => {
@@ -193,6 +211,11 @@ function Layout({ children }) {
         "keydown",
         handleKeydown
       );
+      window.removeEventListener(
+  "storage",
+  syncUser
+);
+
     };
   }, []);
 
@@ -354,20 +377,52 @@ function Layout({ children }) {
                 <i className="bi bi-heart"></i>
               </a>
 
-              {/* LOGIN */}
-              <a
-                className="btn-geo-secondary"
-                href="/login"
-                style={{
-                  padding: "9px 14px",
-                  fontSize: "13px",
-                  borderRadius: "999px",
-                }}
-              >
-                Đăng nhập
-              </a>
+              {user ? (
+              <>
+              {/* USER */}
+            <div className="nav-user-box">
+              <i className="bi bi-person-circle"></i>
 
-              {/* REGISTER */}
+              <span>
+                {user.full_name || user.username}
+              </span>
+            </div>
+
+    {/* LOGOUT */}
+    <a
+      className="btn-geo-danger"
+      href="/logout"
+      style={{
+        padding: "9px 14px",
+        fontSize: "13px",
+        borderRadius: "999px",
+      }}
+      onClick={() => {
+        localStorage.removeItem("user");
+      }}
+    >
+      Đăng xuất
+    </a>
+  </>
+) : (
+  <>
+    {/* LOGIN */}
+    <a
+      className="btn-geo-secondary"
+      href="/login"
+      style={{
+        padding: "9px 14px",
+        fontSize: "13px",
+        borderRadius: "999px",
+      }}
+    >
+      Đăng nhập
+    </a>
+  </>
+)}
+
+              
+              {/* CREATE */}
               <a className="btn-admin" href="/properties/create">
                 <i className="bi bi-building-add"></i>
 
