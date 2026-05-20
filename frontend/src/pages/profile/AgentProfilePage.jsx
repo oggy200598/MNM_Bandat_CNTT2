@@ -1,156 +1,185 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 
-import PageShell from "../../components/layout/PageShell";
-import PropertyMiniCard from "../../components/property/PropertyMiniCard";
+import "../../App.css";
 
 import { api } from "../../api";
-
-import sampleProperties from "../../data/sampleProperties";
-
-import "../ExtraPages.css";
+import PropertyMiniCard from "../../components/property/PropertyMiniCard";
 
 export default function AgentProfilePage() {
+  const { id } =
+    useParams();
 
-  const [agent, setAgent] = useState({
+  const [loading, setLoading] =
+    useState(true);
 
-    name: "Nguyễn Văn A",
-
-    email: "agent@example.com",
-
-    phone: "0901 234 567",
-
-    properties: sampleProperties
-
-  });
+  const [agent, setAgent] =
+    useState(null);
 
   useEffect(() => {
+    async function loadAgent() {
+      try {
+        const id =
+          id;
 
-    const id = queryId();
+        if (!id) {
+          setLoading(false);
+          return;
+        }
 
-    if (!id) return;
+        const data =
+          await api.agent(id);
 
-    api.agent(id).then((data) =>
+        if (data) {
+          setAgent(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-      data && setAgent(data)
+    loadAgent();
+  }, [id]);
 
+  if (loading) {
+    return (
+      <div className="container py-5">
+        <div className="extra-card">
+          Đang tải môi giới...
+        </div>
+      </div>
     );
+  }
 
-  }, []);
+  if (!agent) {
+    return (
+      <div className="container py-5">
+        <div className="extra-card">
+          Không tìm thấy môi giới.
+        </div>
+      </div>
+    );
+  }
 
   return (
+    <div className="container py-5">
+      {/* HEADER */}
+      <div className="extra-card">
+        <div className="agent-profile-top">
+          <div className="agent-profile-left">
+            <img
+              src={
+                agent.avatar ||
+                `https://ui-avatars.com/api/?background=d4af37&color=111&name=${encodeURIComponent(
+                  agent.name || "Agent"
+                )}`
+              }
+              alt={agent.name}
+              className="agent-profile-avatar"
+            />
 
-    <PageShell
-      eyebrow="Hồ sơ môi giới"
-      title={agent.name}
-      desc={`${agent.email} · ${agent.phone}`}
-    >
+            <div>
+              <p className="section-mini-title">
+                Hồ sơ môi giới
+              </p>
 
+              <h1 className="section-heading">
+                {agent.name}
+              </h1>
+
+              <p className="muted-line">
+                {agent.email}
+              </p>
+
+              <p className="muted-line">
+                {agent.phone}
+              </p>
+            </div>
+          </div>
+
+          <div className="extra-top-actions">
+            <a
+              className="btn-geo-secondary"
+              href={`tel:${
+                agent.phone || ""
+              }`}
+            >
+              Gọi ngay
+            </a>
+
+            <a
+              className="btn-geo-primary"
+              href={`mailto:${
+                agent.email || ""
+              }`}
+            >
+              Gửi email
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* STATS */}
       <div className="dashboard-stats">
-
-        <div>
-
+        <div className="extra-card">
           <strong>
-
-            {
-
-              agent.properties?.length || 0
-
-            }
-
+            {agent.properties?.length ||
+              0}
           </strong>
 
           <span>
             Tin đang phụ trách
           </span>
-
         </div>
 
-        <div>
-
+        <div className="extra-card">
           <strong>
-
-            {
-
-              agent.lat ?? "-"
-
-            }
-
+            {agent.lat ?? "-"}
           </strong>
 
-          <span>
-            Vĩ độ
-          </span>
-
+          <span>Vĩ độ</span>
         </div>
 
-        <div>
-
+        <div className="extra-card">
           <strong>
-
-            {
-
-              agent.lng ?? "-"
-
-            }
-
+            {agent.lng ?? "-"}
           </strong>
 
-          <span>
-            Kinh độ
-          </span>
-
+          <span>Kinh độ</span>
         </div>
-
       </div>
 
-      <div className="extra-top-actions">
-
-        <a
-          className="btn-geo-secondary"
-          href={`tel:${
-            agent.phone || "0901234567"
-          }`}
+      {/* PROPERTIES */}
+      <div className="extra-card">
+        <h2
+          className="section-heading"
+          style={{
+            marginBottom: 24,
+          }}
         >
+          Bất động sản phụ trách
+        </h2>
 
-          Gọi ngay
-
-        </a>
-
-        <a
-          className="btn-admin"
-          href={`mailto:${
-            agent.email || "agent@example.com"
-          }`}
-        >
-
-          Gửi email
-
-        </a>
-
+        {agent.properties?.length >
+        0 ? (
+          <div className="mini-grid">
+            {agent.properties.map(
+              (p) => (
+                <PropertyMiniCard
+                  p={p}
+                  key={p.id}
+                />
+              )
+            )}
+          </div>
+        ) : (
+          <p className="muted-line">
+            Chưa có bất động sản.
+          </p>
+        )}
       </div>
-
-      <div className="mini-grid">
-
-        {
-
-          (
-            agent.properties
-            || sampleProperties
-          ).map((p) => (
-
-            <PropertyMiniCard
-              p={p}
-              key={p.id}
-            />
-
-          ))
-
-        }
-
-      </div>
-
-    </PageShell>
-
+    </div>
   );
-
 }

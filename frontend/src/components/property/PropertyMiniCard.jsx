@@ -33,7 +33,7 @@ export default function PropertyMiniCard({
 
         <div className="mini-actions">
           <a
-            href={`/property-detail?id=${p.id}`}
+            href={`/property-detail/${p.id}`}
             className="btn-geo-primary"
           >
             Xem chi tiết

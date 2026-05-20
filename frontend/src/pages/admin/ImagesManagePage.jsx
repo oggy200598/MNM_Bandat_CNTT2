@@ -1,9 +1,31 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback
+} from "react";
+import { useParams } from "react-router-dom";
+
 import { api } from "../../api";
 
-export function ImagesManagePage() {
+export default function ImagesManagePage() {
+  const { id: routeId } =
+    useParams();
 
-  const id = queryId() || "1";
+  function queryId() {
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    return params.get("id");
+
+  }
+
+  const id =
+    routeId ||
+    queryId() ||
+    "1";
 
   const [property, setProperty] =
     useState(null);
@@ -25,7 +47,35 @@ export function ImagesManagePage() {
   const [message, setMessage] =
     useState("");
 
-  const refresh = async () => {
+  const refresh = useCallback(
+    async () => {
+
+      const data =
+        await api.property(id);
+
+      if (data) {
+
+        setProperty(data);
+
+        setImages(
+          data.images || []
+        );
+
+      } else {
+
+        setProperty(null);
+
+        setImages([]);
+
+      }
+
+    },
+    [id]
+  );
+
+useEffect(() => {
+
+  async function loadData() {
 
     const data =
       await api.property(id);
@@ -46,13 +96,11 @@ export function ImagesManagePage() {
 
     }
 
-  };
+  }
 
-  useEffect(() => {
+  loadData();
 
-    refresh();
-
-  }, [id]);
+}, [id]);
 
   const submit = async (
     event
@@ -96,14 +144,28 @@ export function ImagesManagePage() {
 
   return (
 
-    <PageShell
-      eyebrow="Quản lý media"
-      title="Ảnh cho tin đăng"
-      desc={
-        property?.title ||
-        "Chưa có dữ liệu tin."
-      }
-    >
+    <div className="container py-5">
+
+      <div className="mb-4">
+
+        <p className="section-mini-title">
+          Quản lý ảnh
+        </p>
+
+        <h1 className="section-heading">
+          Ảnh bất động sản
+        </h1>
+
+        <p className="muted-line">
+
+          {
+            property?.title ||
+            "Chưa có dữ liệu."
+          }
+
+        </p>
+
+      </div>
 
       <form
         className="extra-card form-stack"
@@ -188,7 +250,7 @@ export function ImagesManagePage() {
         </label>
 
         <button
-          className="btn-admin"
+          className="btn-geo-primary"
           type="submit"
         >
 
@@ -212,7 +274,7 @@ export function ImagesManagePage() {
 
       </form>
 
-      <div className="mini-grid media-grid">
+      <div className="media-grid mt-4">
 
         {
 
@@ -247,35 +309,32 @@ export function ImagesManagePage() {
 
               <div className="mini-content">
 
-                <div className="mini-meta">
+                <strong>
 
-                  <strong>
+                  Thứ tự
+                  {" "}
 
-                    Thứ tự
-                    {" "}
-                    {
+                  {
 
-                      img.sort_order
-                      ?? i
+                    img.sort_order
+                    ?? i
 
-                    }
+                  }
 
-                  </strong>
+                </strong>
 
-                  <span>
+                <p className="muted-line">
 
-                    {
+                  {
 
-                      img.caption
-                      || property?.title
+                    img.caption
+                    || property?.title
 
-                    }
+                  }
 
-                  </span>
+                </p>
 
-                </div>
-
-                <div className="mini-actions">
+                <div className="pill-row mt-3">
 
                   <button
                     className="btn-geo-secondary"
@@ -325,10 +384,8 @@ export function ImagesManagePage() {
 
       </div>
 
-    </PageShell>
+    </div>
 
   );
 
 }
-
-export default ImagesManagePage;

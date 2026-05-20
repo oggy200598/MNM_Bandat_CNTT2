@@ -1,176 +1,133 @@
 import { useEffect, useState } from "react";
+
+import "../../App.css";
+
 import { api } from "../../api";
 
-export function AdminDashboardPage() {
-
-  const [stats, setStats] = useState({
-    properties: 0,
-    agents: 0,
-    users: 0,
-    imports: 0
-  });
-
-  const [file, setFile] =
-    useState(null);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [result, setResult] =
-    useState(null);
-
-  useEffect(() => {
-
-    setStats({
+export default function AdminDashboardPage() {
+  const [stats, setStats] =
+    useState({
       properties: 0,
       agents: 0,
       users: 0,
-      imports: 0
+      imports: 0,
     });
 
-  }, []);
+  const [loading, setLoading] =
+    useState(true);
 
-  const handleFile = (e) => {
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const data =
+          await api.dashboard();
 
-    const f =
-      e.target.files?.[0];
+        if (data) {
+          setStats({
+            properties:
+              data.property_total || 0,
 
-    if (f) {
+            agents:
+              data.agent_total || 0,
 
-      setFile(f);
+            users:
+              data.lead_total || 0,
 
+            imports:
+              data.appointment_total || 0,
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     }
 
-  };
-
-  const handleSubmit = async () => {
-
-    if (!file) return;
-
-    setLoading(true);
-
-    const text =
-      await file.text();
-
-    const res =
-      await api.importPropertiesCSV(
-        text
-      );
-
-    setLoading(false);
-
-    setResult(res);
-
-  };
+    loadStats();
+  }, []);
 
   return (
+    <div className="container py-5">
+      {/* HEADER */}
+      <div className="mb-4">
+        <p className="section-mini-title">
+          Quản trị
+        </p>
 
-    <PageShell
-      eyebrow="Quản trị"
-      title="Bảng điều khiển quản trị"
-    >
+        <h1 className="section-heading">
+          Bảng điều khiển quản trị
+        </h1>
 
-      <div className="container">
-
-        <div className="dashboard-grid">
-
-          <div className="mini-card">
-
-            <strong>
-              Thống kê
-            </strong>
-
-            <p>
-
-              Properties:
-              {" "}
-              {stats.properties}
-
-              {" · "}
-
-              Agents:
-              {" "}
-              {stats.agents}
-
-              {" · "}
-
-              Users:
-              {" "}
-              {stats.users}
-
-              {" · "}
-
-              Imports:
-              {" "}
-              {stats.imports}
-
-            </p>
-
-          </div>
-
-          <div className="mini-card">
-
-            <strong>
-              Nhập CSV
-            </strong>
-
-            <p>
-
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFile}
-                disabled={loading}
-              />
-
-              <br />
-
-              <button
-                className="btn-geo-primary"
-                onClick={handleSubmit}
-                disabled={
-                  !file || loading
-                }
-              >
-
-                {
-
-                  loading
-                    ? "Đang nhập..."
-                    : "Nhập"
-
-                }
-
-              </button>
-
-              {
-
-                result && (
-
-                  <p>
-
-                    Kết quả:
-                    {" "}
-                    {JSON.stringify(result)}
-
-                  </p>
-
-                )
-
-              }
-
-            </p>
-
-          </div>
-
-        </div>
-
+        <p className="muted-line">
+          Theo dõi hệ thống bất động
+          sản theo thời gian thực.
+        </p>
       </div>
 
-    </PageShell>
+      {/* STATS */}
+      <div className="dashboard-stats">
+        <div className="extra-card">
+          <strong>
+            {loading
+              ? "..."
+              : stats.properties}
+          </strong>
 
+          <span>
+            Bất động sản
+          </span>
+        </div>
+
+        <div className="extra-card">
+          <strong>
+            {loading
+              ? "..."
+              : stats.agents}
+          </strong>
+
+          <span>Môi giới</span>
+        </div>
+
+        <div className="extra-card">
+          <strong>
+            {loading
+              ? "..."
+              : stats.users}
+          </strong>
+
+          <span>Người dùng</span>
+        </div>
+
+        <div className="extra-card">
+          <strong>
+            {loading
+              ? "..."
+              : stats.imports}
+          </strong>
+
+          <span>Lượt import</span>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="extra-card">
+        <h2
+          className="section-heading"
+          style={{
+            marginBottom: 20,
+          }}
+        >
+          Tổng quan hệ thống
+        </h2>
+
+        <p className="muted-line">
+          Dashboard quản trị giúp
+          theo dõi số lượng bất động
+          sản, môi giới và hoạt động
+          của hệ thống.
+        </p>
+      </div>
+    </div>
   );
-
 }
-
-export default AdminDashboardPage;

@@ -1,113 +1,128 @@
-import useState from "react";
-
-import PageShell from "../../components/layout/PageShell";
-
+import { useEffect, useState } from "react";
+import "../../App.css";
 import { api } from "../../api";
 
-import sampleProperties from "../../data/sampleProperties";
-
 export default function AppointmentCreatePage() {
+  const [properties, setProperties] = useState([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const [message, setMessage] =
-    useState("");
+  useEffect(() => {
+    async function loadProperties() {
+      try {
+        const data = await api.properties();
 
-  const submit = async (
-    event
-  ) => {
+        if (Array.isArray(data)) {
+          setProperties(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
 
+    loadProperties();
+  }, []);
+
+  async function submit(event) {
     event.preventDefault();
 
-    const form =
-      new FormData(
-        event.currentTarget
-      );
-
-    const result =
-      await api.createAppointment({
-
-        lead_id:
-          form.get("lead_id"),
-
-        property_id:
-          form.get("property_id"),
-
-        scheduled_at:
-          form.get("scheduled_at"),
-
-        notes:
-          form.get("notes")
-
-      });
-
-    setMessage(
-
-      result?.id
-
-        ? "Đã tạo lịch hẹn trong backend."
-
-        : "Chưa tạo được lịch hẹn. Cần lead/property ID thật."
-
+    const form = new FormData(
+      event.currentTarget
     );
 
-  };
+    try {
+      const result =
+        await api.createAppointment({
+          lead_id: form.get("lead_id"),
+          property_id: form.get("property_id"),
+          scheduled_at: form.get("scheduled_at"),
+          notes: form.get("notes"),
+        });
+
+      if (result?.id) {
+        setMessage(
+          "Đã tạo lịch hẹn thành công."
+        );
+
+        event.currentTarget.reset();
+      } else {
+        setMessage(
+          "Không thể tạo lịch hẹn."
+        );
+      }
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        "Có lỗi xảy ra khi tạo lịch hẹn."
+      );
+    }
+  }
 
   return (
+    <div className="container py-5">
+      {/* HEADER */}
+      <div className="mb-4">
+        <p className="section-mini-title">
+          Lịch hẹn xem nhà
+        </p>
 
-    <PageShell
-      eyebrow="Lịch hẹn xem nhà"
-      title="Tạo lịch hẹn"
-      desc="Chọn khách hàng, bất động sản và thời gian hẹn."
-    >
+        <h1 className="section-heading">
+          Tạo lịch hẹn
+        </h1>
 
+        <p className="muted-line">
+          Chọn khách hàng, bất động sản
+          và thời gian hẹn.
+        </p>
+      </div>
+
+      {/* FORM */}
       <form
         className="extra-card form-grid"
         onSubmit={submit}
       >
-
         <label className="extra-field">
-
           <span>
             Lead ID
           </span>
 
           <input
             name="lead_id"
-            placeholder="1"
+            placeholder="Nhập lead id"
+            required
           />
-
         </label>
 
         <label className="extra-field">
-
           <span>
             Bất động sản
           </span>
 
-          <select name="property_id">
+          <select
+            name="property_id"
+            required
+          >
+            <option value="">
+              {loading
+                ? "Đang tải..."
+                : "Chọn bất động sản"}
+            </option>
 
-            {
-
-              sampleProperties.map((p) => (
-
-                <option
-                  value={p.id}
-                  key={p.id}
-                >
-
-                  {p.title}
-
-                </option>
-
-              ))
-
-            }
-
+            {properties.map((p) => (
+              <option
+                value={p.id}
+                key={p.id}
+              >
+                {p.title}
+              </option>
+            ))}
           </select>
-
         </label>
 
         <label className="extra-field">
-
           <span>
             Thời gian hẹn
           </span>
@@ -115,12 +130,11 @@ export default function AppointmentCreatePage() {
           <input
             name="scheduled_at"
             type="datetime-local"
+            required
           />
-
         </label>
 
         <label className="extra-field form-wide">
-
           <span>
             Ghi chú
           </span>
@@ -128,34 +142,23 @@ export default function AppointmentCreatePage() {
           <textarea
             name="notes"
             rows="5"
+            placeholder="Nhập ghi chú..."
           />
-
         </label>
 
-        <button className="btn-admin form-wide">
-
+        <button
+          type="submit"
+          className="btn-geo-primary form-wide"
+        >
           Tạo lịch hẹn
-
         </button>
 
-        {
-
-          message && (
-
-            <p className="muted-line form-wide">
-
-              {message}
-
-            </p>
-
-          )
-
-        }
-
+        {message && (
+          <p className="muted-line form-wide">
+            {message}
+          </p>
+        )}
       </form>
-
-    </PageShell>
-
+    </div>
   );
-
 }

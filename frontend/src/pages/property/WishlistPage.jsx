@@ -1,354 +1,235 @@
+import { useEffect, useState } from "react";
+
 import {
   api,
-  normalizeProperty,
-  formatPrice
+  normalizeProperty
 } from "../../api";
 
-import usePropertyDetail
-  from "../../hooks/usePropertyDetail";
+export default function WishlistPage() {
+  const [wishlist, setWishlist] =
+    useState([]);
+  const [compare, setCompare] =
+    useState([]);
+  const [loading, setLoading] =
+    useState(true);
 
-import PropertyMiniCard
-  from "../../components/property/PropertyMiniCard";
+  async function loadData() {
+    try {
+      setLoading(true);
 
-export default function PropertyDetailPage() {
+      const [
+        wishlistData,
+        compareData
+      ] = await Promise.all([
+        api.wishlist(),
+        api.compare()
+      ]);
 
-  const property = usePropertyDetail();
+      setWishlist(
+        Array.isArray(wishlistData)
+          ? wishlistData
+          : []
+      );
+      setCompare(
+        Array.isArray(compareData)
+          ? compareData
+          : []
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const p = normalizeProperty(property);
-
-  const images =
-    property?.images?.length
-      ? property.images
-      : [
-          {
-            image: p.imageUrl,
-            caption: p.title,
-            is_primary: true
-          }
-        ];
-
-  const nearbyAmenities =
-    property?.nearby_amenities || [];
-
-  const similar =
-    property?.similar_properties || [];
+  useEffect(() => {
+    loadData();
+  }, []);
 
   return (
-    <div className="extra-page">
+    <div className="container py-5">
+      <div className="mb-4">
+        <p className="section-mini-title">
+          Bộ sưu tập cá nhân
+        </p>
+        <h1 className="section-heading">
+          Tin đã lưu và so sánh
+        </h1>
+        <p className="muted-line">
+          Theo dõi bất động sản bạn quan tâm và chuyển nhanh sang bước liên hệ.
+        </p>
+      </div>
 
-      {/* HERO */}
-      <section
-        className="detail-hero-copy"
-        style={{
-          backgroundImage: `url(${images[0]?.image || p.imageUrl})`
-        }}
-      >
-        <div className="container detail-hero-inner">
-
-          <span className="badge-gold">
-            {p.statusText}
-          </span>
-
-          <span className="badge-gold">
-            {p.typeText}
-          </span>
-
+      <div className="dashboard-stats">
+        <div className="extra-card">
+          <strong>
+            {wishlist.length}
+          </strong>
+          <span>Đã lưu</span>
         </div>
-      </section>
+        <div className="extra-card">
+          <strong>
+            {compare.length}
+          </strong>
+          <span>Đang so sánh</span>
+        </div>
+      </div>
 
-      <main className="container detail-layout-copy">
+      <div className="extra-card mt-4">
+        <h2 className="section-heading">
+          Bất động sản đã lưu
+        </h2>
 
-        {/* LEFT */}
-        <section>
+        {loading ? (
+          <p className="muted-line">
+            Đang tải...
+          </p>
+        ) : wishlist.length ? (
+          <div className="mini-grid">
+            {wishlist.map((item) => {
+              const p =
+                normalizeProperty(item);
 
-          {/* INFO */}
-          <div className="extra-card">
-
-            <h1 className="section-heading">
-              {p.title}
-            </h1>
-
-            <p className="extra-desc">
-              📍 {p.address}
-            </p>
-
-            <div
-              className="mini-actions"
-              style={{ marginBottom: 16 }}
-            >
-
-              <button
-                className="btn-geo-secondary"
-                type="button"
-                onClick={async () => {
-
-                  await api.toggleWishlist(
-                    property.id
-                  );
-
-                  alert("Đã lưu tin");
-
-                }}
-              >
-                Lưu tin
-              </button>
-
-              <button
-                className="btn-geo-secondary"
-                type="button"
-                onClick={async () => {
-                  await api.toggleCompare(
-                    property.id
-                  );
-                }}
-              >
-                So sánh
-              </button>
-
-            </div>
-
-            <div className="detail-stat-grid">
-
-              <div>
-                <strong>
-                  {p.priceText}
-                </strong>
-
-                <span>Giá bán</span>
-              </div>
-
-              <div>
-                <strong>
-                  {p.area} m²
-                </strong>
-
-                <span>Diện tích</span>
-              </div>
-
-              <div>
-                <strong>
-                  {p.agentName}
-                </strong>
-
-                <span>Môi giới</span>
-              </div>
-
-            </div>
-
-            <h3>Mô tả</h3>
-
-            <p className="long-text">
-              {p.description ||
-                "Thông tin đang cập nhật"}
-            </p>
-
-          </div>
-
-          {/* IMAGES */}
-          <div className="extra-card">
-
-            <h3>Ảnh bất động sản</h3>
-
-            <div className="mini-grid media-grid">
-
-              {images.map((img, index) => (
-
+              return (
                 <article
                   className="mini-property-card"
-                  key={index}
+                  key={item.id}
                 >
-
                   <div
                     className="mini-media"
                     style={{
-                      backgroundImage: `url(${img.image})`
+                      backgroundImage:
+                        `url(${p.imageUrl})`
                     }}
                   >
                     <span>
-                      {img.is_primary
-                        ? "Ảnh chính"
-                        : `Ảnh ${index + 1}`}
+                      {p.statusText}
                     </span>
                   </div>
 
                   <div className="mini-content">
+                    <h3>
+                      {p.title}
+                    </h3>
                     <p>
-                      {img.caption || p.title}
+                      {p.address}
                     </p>
-                  </div>
+                    <strong>
+                      {p.priceText}
+                    </strong>
 
-                </article>
-
-              ))}
-
-            </div>
-
-          </div>
-
-          {/* AMENITIES */}
-          <div className="extra-card">
-
-            <h3>Tiện ích lân cận</h3>
-
-            <div className="pill-row">
-
-              {(nearbyAmenities.length
-                ? nearbyAmenities
-                : [
-                    { name: "Trường học" },
-                    { name: "Bệnh viện" },
-                    { name: "Siêu thị" }
-                  ]
-              ).map((item) => (
-
-                <span
-                  key={item.id || item.name}
-                >
-                  • {item.name}
-                </span>
-
-              ))}
-
-            </div>
-
-          </div>
-
-          {/* SIMILAR */}
-          {similar.length > 0 && (
-
-            <div className="extra-card">
-
-              <h3>Tin tương tự</h3>
-
-              <div className="mini-grid">
-
-                {similar.map((item) => (
-
-                  <PropertyMiniCard
-                    p={item}
-                    key={item.id}
-                  />
-
-                ))}
-
-              </div>
-
-            </div>
-
-          )}
-
-        </section>
-
-        {/* RIGHT */}
-        <aside className="detail-sidebar-copy">
-
-          <div className="extra-card sticky-card">
-
-            <div className="price-big">
-              {p.priceText}
-            </div>
-
-            <div className="sidebar-mini-info">
-
-              <span>
-                📍 {p.address}
-              </span>
-
-              <span>
-                📐 {p.area} m²
-              </span>
-
-              <span>
-                🏠 {p.typeText}
-              </span>
-
-            </div>
-
-            <a
-              className="btn-geo-primary full"
-              href="/lead-form"
-            >
-              Liên hệ tư vấn
-            </a>
-
-            <a
-              className="btn-geo-secondary full"
-              href="/wishlist"
-            >
-              Xem tin đã lưu
-            </a>
-
-          </div>
-
-          {/* AGENT */}
-          <div className="extra-card">
-
-            <h3>Môi giới</h3>
-
-            <p>
-              {p.agentName}
-            </p>
-
-          </div>
-
-          {/* SMALL SIMILAR */}
-          <div className="extra-card">
-
-            <p className="section-mini-title">
-              TIN ĐĂNG TƯƠNG TỰ
-            </p>
-
-            {similar.length > 0 ? (
-
-              similar
-                .slice(0, 2)
-                .map((item) => (
-
-                  <div
-                    className="similar-mini-item"
-                    key={item.id}
-                  >
-
-                    <img
-                      src={
-                        item.image ||
-                        p.imageUrl
-                      }
-                      alt=""
-                    />
-
-                    <div>
-
-                      <strong>
-                        {item.title}
-                      </strong>
-
-                      <p>
-                        {formatPrice(
-                          item.price
-                        )}
-                      </p>
-
+                    <div className="mini-actions">
+                      <a
+                        href={`/property-detail/${item.id}`}
+                        className="btn-geo-primary"
+                      >
+                        Xem chi tiết
+                      </a>
+                      <button
+                        type="button"
+                        className="btn-geo-secondary"
+                        onClick={async () => {
+                          await api.toggleCompare(
+                            item.id
+                          );
+                          await loadData();
+                        }}
+                      >
+                        So sánh
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-geo-secondary"
+                        onClick={async () => {
+                          await api.removeWishlist(
+                            item.id
+                          );
+                          await loadData();
+                        }}
+                      >
+                        Bỏ lưu
+                      </button>
                     </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="muted-line">
+            Bạn chưa lưu bất động sản nào.
+          </p>
+        )}
+      </div>
 
+      <div className="extra-card mt-4">
+        <h2 className="section-heading">
+          Danh sách so sánh
+        </h2>
+
+        {compare.length ? (
+          <div className="mini-grid">
+            {compare.map((item) => {
+              const p =
+                normalizeProperty(item);
+
+              return (
+                <article
+                  className="mini-property-card"
+                  key={item.id}
+                >
+                  <div
+                    className="mini-media"
+                    style={{
+                      backgroundImage:
+                        `url(${p.imageUrl})`
+                    }}
+                  >
+                    <span>
+                      {p.typeText}
+                    </span>
                   </div>
 
-                ))
+                  <div className="mini-content">
+                    <h3>
+                      {p.title}
+                    </h3>
+                    <p>
+                      {p.address}
+                    </p>
+                    <strong>
+                      {p.priceText}
+                    </strong>
 
-            ) : (
-
-              <p className="muted-line">
-                Chưa có tin tương tự.
-              </p>
-
-            )}
-
+                    <div className="mini-actions">
+                      <a
+                        href="/compare"
+                        className="btn-geo-primary"
+                      >
+                        Mở so sánh
+                      </a>
+                      <button
+                        type="button"
+                        className="btn-geo-secondary"
+                        onClick={async () => {
+                          await api.removeCompare(
+                            item.id
+                          );
+                          await loadData();
+                        }}
+                      >
+                        Bỏ so sánh
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-
-        </aside>
-
-      </main>
-
+        ) : (
+          <p className="muted-line">
+            Chưa có bất động sản nào trong danh sách so sánh.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

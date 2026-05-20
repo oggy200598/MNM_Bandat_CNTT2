@@ -1,34 +1,16 @@
 import {
   BrowserRouter,
   Routes,
-  Route
+  Route,
+  Navigate
 } from "react-router-dom";
+
+/* ======================
+   PUBLIC PAGES
+====================== */
 
 import Home from "./pages/Home";
 import About from "./pages/About";
-
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import PasswordResetPage from "./pages/auth/PasswordResetPage";
-
-import PropertyDetailPage from "./pages/property/PropertyDetailPage";
-import PropertyFormPage from "./pages/property/PropertyFormPage";
-import WishlistPage from "./pages/property/WishlistPage";
-
-import DashboardPage from "./pages/dashboard/DashboardPage";
-import CustomerDashboardPage from "./pages/dashboard/CustomerDashboardPage";
-
-import ProfilePage from "./pages/profile/ProfilePage";
-import AgentProfilePage from "./pages/profile/AgentProfilePage";
-
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import AdminConsolePage from "./pages/admin/AdminConsolePage";
-import ImagesManagePage from "./pages/admin/ImagesManagePage";
-
-import LeadFormPage from "./pages/lead/LeadFormPage";
-import AppointmentCreatePage from "./pages/lead/AppointmentCreatePage";
-
-import ErrorPage from "./pages/system/ErrorPage";
 
 import {
   AmenitySearchPage,
@@ -37,10 +19,117 @@ import {
   PropertyListPage
 } from "./pages/PropertyPages";
 
+import PropertyDetailPage
+  from "./pages/property/PropertyDetailPage";
+
+/* ======================
+   AUTH PAGES
+====================== */
+
+import LoginPage
+  from "./pages/auth/LoginPage";
+
+import RegisterPage
+  from "./pages/auth/RegisterPage";
+
+import PasswordResetPage
+  from "./pages/auth/PasswordResetPage";
+
+/* ======================
+   USER PAGES
+====================== */
+
+import WishlistPage
+  from "./pages/property/WishlistPage";
+
+import DashboardPage
+  from "./pages/dashboard/DashboardPage";
+
+import CustomerDashboardPage
+  from "./pages/dashboard/CustomerDashboardPage";
+
+import ProfilePage
+  from "./pages/profile/ProfilePage";
+
+import AgentProfilePage
+  from "./pages/profile/AgentProfilePage";
+
+import LeadFormPage
+  from "./pages/lead/LeadFormPage";
+
+import AppointmentCreatePage
+  from "./pages/lead/AppointmentCreatePage";
+
+/* ======================
+   PROPERTY MANAGEMENT
+====================== */
+
+import PropertyFormPage
+  from "./pages/property/PropertyFormPage";
+
+import ImagesManagePage
+  from "./pages/admin/ImagesManagePage";
+
+/* ======================
+   ADMIN PAGES
+====================== */
+
+import AdminDashboardPage
+  from "./pages/admin/AdminDashboardPage";
+
+import AdminConsolePage
+  from "./pages/admin/AdminConsolePage";
+
+/* ======================
+   SYSTEM
+====================== */
+
+import ErrorPage
+  from "./pages/system/ErrorPage";
+
+/* ======================
+   PROTECTED ROUTE
+====================== */
+
+function ProtectedRoute({
+  children,
+  allowedRoles = []
+}) {
+
+  const user = JSON.parse(
+    localStorage.getItem("user")
+  );
+
+  // chưa login
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  // sai quyền
+  if (
+    allowedRoles.length > 0 &&
+    !allowedRoles.includes(user.role)
+  ) {
+    return <Navigate to="/403" />;
+  }
+
+  return children;
+}
+
+/* ======================
+   APP
+====================== */
+
 export default function App() {
+
   return (
     <BrowserRouter>
+
       <Routes>
+
+        {/* ======================
+            PUBLIC ROUTES
+        ====================== */}
 
         <Route
           path="/"
@@ -58,6 +147,11 @@ export default function App() {
         />
 
         <Route
+          path="/property-detail/:id"
+          element={<PropertyDetailPage />}
+        />
+
+        <Route
           path="/nearby"
           element={<NearbySearchPage />}
         />
@@ -72,40 +166,9 @@ export default function App() {
           element={<ComparePage />}
         />
 
-        <Route
-          path="/property-detail"
-          element={<PropertyDetailPage />}
-        />
-
-        <Route
-          path="/properties/create"
-          element={<PropertyFormPage />}
-        />
-
-        <Route
-          path="/properties/edit"
-          element={<PropertyFormPage edit />}
-        />
-
-        <Route
-          path="/properties/images"
-          element={<ImagesManagePage />}
-        />
-
-        <Route
-          path="/profile"
-          element={<ProfilePage />}
-        />
-
-        <Route
-          path="/agent-profile"
-          element={<AgentProfilePage />}
-        />
-
-        <Route
-          path="/appointments/create"
-          element={<AppointmentCreatePage />}
-        />
+        {/* ======================
+            AUTH ROUTES
+        ====================== */}
 
         <Route
           path="/login"
@@ -116,42 +179,198 @@ export default function App() {
           path="/register"
           element={<RegisterPage />}
         />
+
         <Route
           path="/password-reset"
           element={<PasswordResetPage />}
         />
 
+        {/* ======================
+            USER ROUTES
+        ====================== */}
+
         <Route
           path="/wishlist"
-          element={<WishlistPage />}
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "agent",
+                "admin"
+              ]}
+            >
+              <WishlistPage />
+            </ProtectedRoute>
+          }
         />
 
         <Route
-          path="/lead-form"
-          element={<LeadFormPage />}
+          path="/profile"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "agent",
+                "admin"
+              ]}
+            >
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/agent-profile/:id"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "agent",
+                "admin"
+              ]}
+            >
+              <AgentProfilePage />
+            </ProtectedRoute>
+          }
         />
 
         <Route
           path="/dashboard"
-          element={<DashboardPage />}
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <DashboardPage />
+            </ProtectedRoute>
+          }
         />
 
         <Route
           path="/customer-dashboard"
           element={
-            <CustomerDashboardPage />
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "admin"
+              ]}
+            >
+              <CustomerDashboardPage />
+            </ProtectedRoute>
           }
         />
 
         <Route
-          path="/admin-dashboard"
-          element={<AdminDashboardPage />}
+          path="/lead-form"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "admin"
+              ]}
+            >
+              <LeadFormPage />
+            </ProtectedRoute>
+          }
         />
 
         <Route
-          path="/admin-console"
-          element={<AdminConsolePage />}
+          path="/appointments/create"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "admin"
+              ]}
+            >
+              <AppointmentCreatePage />
+            </ProtectedRoute>
+          }
         />
+
+        {/* ======================
+            PROPERTY MANAGEMENT
+        ====================== */}
+
+        <Route
+          path="/properties/create"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <PropertyFormPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/properties/edit/:id"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <PropertyFormPage edit />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/properties/images/:id"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <ImagesManagePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ======================
+            ADMIN ROUTES
+        ====================== */}
+
+        <Route
+          path="/admin-dashboard"
+          element={
+            <ProtectedRoute
+              allowedRoles={["admin"]}
+            >
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin-console/*"
+          element={
+            <ProtectedRoute
+              allowedRoles={["admin"]}
+            >
+              <AdminConsolePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ======================
+            ERROR ROUTES
+        ====================== */}
 
         <Route
           path="/403"
@@ -175,6 +394,7 @@ export default function App() {
         />
 
       </Routes>
+
     </BrowserRouter>
   );
 }

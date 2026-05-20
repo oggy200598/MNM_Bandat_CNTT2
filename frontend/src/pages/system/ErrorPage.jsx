@@ -1,5 +1,3 @@
-import PageShell from "../../components/layout/PageShell";
-
 export default function ErrorPage({
   code = "404"
 }) {
@@ -9,24 +7,11 @@ export default function ErrorPage({
 
   return (
 
-    <PageShell
-      eyebrow="Bản đồ hệ thống"
-      title={
-        forbidden
-          ? "Khu vực hạn chế!"
-          : "Mất dấu tọa độ!"
-      }
-      desc={
-        forbidden
+    <div className="error-page-custom">
 
-          ? "Tài khoản của bạn không có đủ quyền hạn để truy cập vào phân khu này."
+      <div className="error-bg-glow" />
 
-          : "Tọa độ bạn đang tìm kiếm không tồn tại trên bản đồ hoặc đã bị di dời."
-      }
-      maxWidth="760px"
-    >
-
-      <div className="extra-card error-card">
+      <div className="error-box">
 
         <div
           className={
@@ -40,7 +25,33 @@ export default function ErrorPage({
 
         </div>
 
-        <div className="mini-actions center">
+        <p className="error-eyebrow">
+
+          BẢN ĐỒ HỆ THỐNG
+
+        </p>
+
+        <h1 className="error-title">
+
+          {
+            forbidden
+              ? "Khu vực hạn chế!"
+              : "Mất dấu tọa độ!"
+          }
+
+        </h1>
+
+        <p className="error-desc">
+
+          {
+            forbidden
+              ? "Tài khoản của bạn không đủ quyền để truy cập khu vực này."
+              : "Trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển."
+          }
+
+        </p>
+
+        <div className="error-actions">
 
           <a
             href="/"
@@ -60,7 +71,7 @@ export default function ErrorPage({
                 className="btn-geo-secondary"
               >
 
-                Đăng nhập ngay
+                Đăng nhập
 
               </a>
 
@@ -72,7 +83,7 @@ export default function ErrorPage({
 
       </div>
 
-    </PageShell>
+    </div>
 
   );
 

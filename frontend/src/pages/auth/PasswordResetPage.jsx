@@ -1,11 +1,13 @@
 import { useState } from "react";
-import "../ExtraPages.css";
-
+import { api } from "../../api";
+import "../../App.css";
 export default function PasswordResetPage() {
   const [message, setMessage] =
     useState("");
+  const [loading, setLoading] =
+    useState(false);
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
 
     const form = new FormData(
@@ -14,12 +16,19 @@ export default function PasswordResetPage() {
 
     const email = form.get("email");
 
-    console.log({
-      email,
-    });
+    setLoading(true);
+
+    const result =
+      await api.passwordResetRequest({
+        email
+      });
+
+    setLoading(false);
 
     setMessage(
-      "Đã gửi mã xác nhận 6 số tới email của bạn."
+      result?.ok
+        ? "Đã ghi nhận yêu cầu đặt lại mật khẩu."
+        : "Không thể gửi yêu cầu lúc này."
     );
   };
 
@@ -65,8 +74,11 @@ export default function PasswordResetPage() {
             <button
               type="submit"
               className="btn-geo-primary"
+              disabled={loading}
             >
-              Gửi mã xác nhận
+              {loading
+                ? "Đang gửi..."
+                : "Gửi mã xác nhận"}
             </button>
           </form>
 

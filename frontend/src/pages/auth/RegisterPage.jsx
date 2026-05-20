@@ -1,8 +1,12 @@
 import { useState } from "react";
-import "../ExtraPages.css";
+import { Navigate } from "react-router-dom";
+
+import { api } from "../../api";
+import "../../App.css";
 
 export default function RegisterPage() {
   const [message, setMessage] = useState("");
+  const [redirect, setRedirect] = useState(false);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -25,10 +29,34 @@ export default function RegisterPage() {
       password,
     };
 
-    console.log(payload);
+    const result =
+      await api.register(payload);
 
-    setMessage("Đăng ký thành công!");
+    if (
+      result?.token &&
+      result?.user
+    ) {
+      localStorage.setItem(
+        "user",
+        JSON.stringify(
+          result.user
+        )
+      );
+      setMessage("Đăng ký thành công!");
+      setRedirect(true);
+      return;
+    }
+
+    setMessage(
+      "Không thể tạo tài khoản."
+    );
   };
+
+  if (redirect) {
+    return (
+      <Navigate to="/customer-dashboard" />
+    );
+  }
 
   return (
     <div className="extra-page">
@@ -50,11 +78,12 @@ export default function RegisterPage() {
             className="form-grid"
           >
             <label className="extra-field">
-              <span>Tên đăng nhập</span>
+              <span>Tài khoản</span>
 
               <input
                 type="text"
                 name="username"
+                placeholder="Nhập tài khoản"
                 required
               />
             </label>
@@ -69,11 +98,12 @@ export default function RegisterPage() {
             </label>
 
             <label className="extra-field">
-              <span>Email</span>
+              <span>Email liên hệ</span>
 
               <input
                 type="email"
                 name="email"
+                placeholder="name@example.com"
               />
             </label>
 

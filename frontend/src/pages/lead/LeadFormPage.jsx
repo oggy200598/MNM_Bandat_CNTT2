@@ -1,8 +1,4 @@
-import useState from "react";
-
-import PageShell from "../../components/layout/PageShell";
-import Field from "../../components/forms/Field";
-
+import { useState } from "react";
 import { api } from "../../api";
 
 export default function LeadFormPage() {
@@ -10,53 +6,84 @@ export default function LeadFormPage() {
   const [message, setMessage] =
     useState("");
 
+  const [loading, setLoading] =
+    useState(false);
+
+  const [formData, setFormData] =
+    useState({
+
+      name: "",
+      phone: "",
+      email: "",
+      interest: "Mua nhà",
+      budget: "",
+      desired_lat: "",
+      desired_lng: "",
+      notes: ""
+
+    });
+
+  const updateField = (
+    field,
+    value
+  ) => {
+
+    setFormData((prev) => ({
+
+      ...prev,
+
+      [field]: value
+
+    }));
+
+  };
+
   const submit = async (
     event
   ) => {
 
     event.preventDefault();
 
-    const form =
-      new FormData(
-        event.currentTarget
-      );
+    setLoading(true);
 
     const result =
       await api.createLead({
 
         name:
-          form.get("name"),
+          formData.name,
 
         phone:
-          form.get("phone"),
+          formData.phone,
+
+        email:
+          formData.email,
 
         budget:
-          form.get("budget")
-          || null,
+          formData.budget || null,
 
         property_interest:
-          form.get("interest"),
+          formData.interest,
 
         notes:
-          form.get("notes"),
+          formData.notes,
 
         desired_lat:
-          form.get("desired_lat")
-          || null,
+          formData.desired_lat || null,
 
         desired_lng:
-          form.get("desired_lng")
-          || null,
+          formData.desired_lng || null,
 
       });
+
+    setLoading(false);
 
     setMessage(
 
       result?.id
 
-        ? "Đã gửi lead vào backend."
+        ? "Đã gửi thông tin thành công."
 
-        : "Chưa gửi được lead."
+        : "Không thể gửi thông tin."
 
     );
 
@@ -64,160 +91,295 @@ export default function LeadFormPage() {
 
   return (
 
-    <PageShell
-      eyebrow="Biểu mẫu khách hàng"
-      title="Gửi nhu cầu tư vấn"
-      desc="Điền thông tin để hệ thống tự gán môi giới gần nhất."
-    >
+    <div className="lead-page">
 
-      <div className="lead-layout-copy">
+      <div className="lead-bg" />
 
-        <form
-          className="extra-card form-grid"
-          onSubmit={submit}
-        >
+      <div className="container">
 
-          <label className="extra-field">
+        <div className="lead-header">
 
-            <span>
-              Họ tên
-            </span>
+          <p className="lead-eyebrow">
 
-            <input name="name" />
+            BIỂU MẪU KHÁCH HÀNG
 
-          </label>
+          </p>
 
-          <label className="extra-field">
+          <h1>
 
-            <span>
-              Số điện thoại
-            </span>
+            Gửi nhu cầu tư vấn
 
-            <input name="phone" />
+          </h1>
 
-          </label>
+          <p>
 
-          <Field
-            label="Email"
-            type="email"
-          />
+            Hệ thống sẽ tự động gợi ý
+            môi giới và bất động sản phù hợp.
 
-          <label className="extra-field">
+          </p>
 
-            <span>
-              Nhu cầu
-            </span>
+        </div>
 
-            <select name="interest">
+        <div className="lead-layout-copy">
 
-              <option>
-                Mua nhà
-              </option>
+          <form
+            className="extra-card form-grid"
+            onSubmit={submit}
+          >
 
-              <option>
-                Thuê nhà
-              </option>
+            <label className="extra-field">
 
-              <option>
-                Đầu tư
-              </option>
+              <span>
+                Họ tên
+              </span>
 
-            </select>
+              <input
+                value={formData.name}
+                onChange={(e) =>
 
-          </label>
+                  updateField(
+                    "name",
+                    e.target.value
+                  )
 
-          <label className="extra-field">
+                }
+                placeholder="Nguyễn Văn A"
+              />
 
-            <span>
-              Ngân sách
-            </span>
+            </label>
 
-            <input
-              name="budget"
-              placeholder="VD: 5000000000"
-            />
+            <label className="extra-field">
 
-          </label>
+              <span>
+                Số điện thoại
+              </span>
 
-          <Field
-            label="Khu vực quan tâm"
-            name="desired_lng"
-            placeholder="Kinh độ"
-          />
+              <input
+                value={formData.phone}
+                onChange={(e) =>
 
-          <Field
-            label="Tọa độ vĩ độ"
-            name="desired_lat"
-            placeholder="Vĩ độ"
-          />
+                  updateField(
+                    "phone",
+                    e.target.value
+                  )
 
-          <label className="extra-field form-wide">
+                }
+                placeholder="0901234567"
+              />
 
-            <span>
-              Ghi chú
-            </span>
+            </label>
 
-            <textarea
-              name="notes"
-              rows="5"
-              placeholder="Mô tả thêm nhu cầu của bạn"
-            />
+            <label className="extra-field">
 
-          </label>
+              <span>
+                Email
+              </span>
 
-          <button className="btn-geo-primary form-wide">
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
 
-            Gửi thông tin
+                  updateField(
+                    "email",
+                    e.target.value
+                  )
 
-          </button>
+                }
+                placeholder="example@email.com"
+              />
 
-          {
+            </label>
 
-            message && (
+            <label className="extra-field">
 
-              <p className="muted-line form-wide">
+              <span>
+                Nhu cầu
+              </span>
 
-                {message}
+              <select
+                value={formData.interest}
+                onChange={(e) =>
 
-              </p>
+                  updateField(
+                    "interest",
+                    e.target.value
+                  )
 
-            )
+                }
+              >
 
-          }
+                <option>
+                  Mua nhà
+                </option>
 
-        </form>
+                <option>
+                  Thuê nhà
+                </option>
 
-        <aside className="extra-card">
+                <option>
+                  Đầu tư
+                </option>
 
-          <h3>
-            Quy trình
-          </h3>
+              </select>
 
-          <ol className="timeline">
+            </label>
 
-            <li>
-              Tiếp nhận nhu cầu
-            </li>
+            <label className="extra-field">
 
-            <li>
-              Gợi ý bất động sản phù hợp
-            </li>
+              <span>
+                Ngân sách
+              </span>
 
-            <li>
-              Đặt lịch xem nhà
-            </li>
+              <input
+                value={formData.budget}
+                onChange={(e) =>
 
-            <li>
-              Theo dõi sau tư vấn
-            </li>
+                  updateField(
+                    "budget",
+                    e.target.value
+                  )
 
-          </ol>
+                }
+                placeholder="5000000000"
+              />
 
-        </aside>
+            </label>
+
+            <label className="extra-field">
+
+              <span>
+                Kinh độ
+              </span>
+
+              <input
+                value={formData.desired_lng}
+                onChange={(e) =>
+
+                  updateField(
+                    "desired_lng",
+                    e.target.value
+                  )
+
+                }
+                placeholder="106.700"
+              />
+
+            </label>
+
+            <label className="extra-field">
+
+              <span>
+                Vĩ độ
+              </span>
+
+              <input
+                value={formData.desired_lat}
+                onChange={(e) =>
+
+                  updateField(
+                    "desired_lat",
+                    e.target.value
+                  )
+
+                }
+                placeholder="10.776"
+              />
+
+            </label>
+
+            <label className="extra-field form-wide">
+
+              <span>
+                Ghi chú
+              </span>
+
+              <textarea
+                rows="5"
+                value={formData.notes}
+                onChange={(e) =>
+
+                  updateField(
+                    "notes",
+                    e.target.value
+                  )
+
+                }
+                placeholder="Mô tả nhu cầu của bạn..."
+              />
+
+            </label>
+
+            <button
+              className="btn-geo-primary form-wide"
+              disabled={loading}
+            >
+
+              {
+
+                loading
+                  ? "Đang gửi..."
+                  : "Gửi thông tin"
+
+              }
+
+            </button>
+
+            {
+
+              message && (
+
+                <p className="muted-line form-wide">
+
+                  {message}
+
+                </p>
+
+              )
+
+            }
+
+          </form>
+
+          <aside className="extra-card lead-side">
+
+            <h3>
+
+              Quy trình tư vấn
+
+            </h3>
+
+            <ol className="timeline">
+
+              <li>
+                Tiếp nhận yêu cầu
+              </li>
+
+              <li>
+                Phân tích vị trí phù hợp
+              </li>
+
+              <li>
+                Kết nối môi giới
+              </li>
+
+              <li>
+                Đặt lịch xem nhà
+              </li>
+
+              <li>
+                Hỗ trợ giao dịch
+              </li>
+
+            </ol>
+
+          </aside>
+
+        </div>
 
       </div>
 
-    </PageShell>
+    </div>
 
   );
 

@@ -4,31 +4,34 @@ import {
 } from "react";
 
 import {
+  useParams
+} from "react-router-dom";
+
+import {
   api
 } from "../api";
 
-import sampleProperties
-  from "../data/sampleProperties";
+export default function usePropertyDetail(){
 
-function queryId() {
-  return new URLSearchParams(
-    window.location.search
-  ).get("id");
-}
+  const[property,setProperty]=
+    useState(null);
 
-export default function usePropertyDetail() {
-  const [property, setProperty] =
-    useState(sampleProperties[0]);
+  const{id}=useParams();
 
-  useEffect(() => {
-    const id = queryId();
+  useEffect(()=>{
 
-    if (!id) return;
+    if(!id)return;
 
-    api.property(id).then((data) => {
-      if (data) setProperty(data);
-    });
-  }, []);
+    api.property(id)
+      .then((data)=>{
 
-  return property;
+        if(data){
+          setProperty(data);
+        }
+
+      });
+
+  },[id]);
+
+  return [property, setProperty];
 }

@@ -1,886 +1,2436 @@
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const pool = require('../config/db');
-const { propertySelect, mapProperty, mapAmenity, toMediaUrl } = require('../utils/property-mappers');
-const authStore = require('./auth-store');
-const collectionsStore = require('./collections-store');
+import fs from "fs";
+import path from "path";
+import jwt from "jsonwebtoken";
+
+import { fileURLToPath } from "url";
+
+import { pool } from "../../db.js";
+
+import {
+  propertySelect,
+  mapProperty,
+  mapAmenity,
+  toMediaUrl
+} from "../utils/property-mappers.js";
+
+import authStore from "./auth-store.js";
+import collectionsStore from "./collections-store.js";
+
+const __filename =
+  fileURLToPath(import.meta.url);
+
+const __dirname =
+  path.dirname(__filename);
 
 const DEFAULT_LAT = 10.7769;
 const DEFAULT_LNG = 106.7009;
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  "super_secret_key";
 
 function toNumber(value) {
   const n = Number(value);
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n)
+    ? n
+    : null;
 }
 
-function clampLimit(value, max = 100) {
+function clampLimit(
+  value,
+  max = 100
+) {
   const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return Math.min(50, max);
-  return Math.min(Math.floor(n), max);
+
+  if (
+    !Number.isFinite(n) ||
+    n <= 0
+  ) {
+    return Math.min(50, max);
+  }
+
+  return Math.min(
+    Math.floor(n),
+    max
+  );
 }
 
-function resolveCollectionKey(token) {
-  const user = authStore.verifyToken(token);
-  return user ? `user:${user.id}` : 'guest';
+function clampPage(
+  value
+) {
+  const n = Number(value);
+
+  if (
+    !Number.isFinite(n) ||
+    n <= 0
+  ) {
+    return 1;
+  }
+
+  return Math.floor(n);
 }
 
-async function listPropertiesByIds(ids) {
-  const uniqueIds = [...new Set((ids || []).map((item) => Number(item)).filter((item) => Number.isFinite(item)))];
-  if (!uniqueIds.length) return [];
+function parseBbox(
+  value
+) {
+  if (!value) {
+    return null;
+  }
 
-  const result = await pool.query(
-    `SELECT ${propertySelect()}
-     FROM properties_property p
-     LEFT JOIN accounts_agent a ON a.id = p.agent_id
-     WHERE p.id = ANY($1::int[])`,
-    [uniqueIds]
+  const parts =
+    String(value)
+    .split(",")
+    .map((item) =>
+      Number(item.trim())
+    );
+
+  if (
+    parts.length !== 4 ||
+    parts.some(
+      (item) =>
+        !Number.isFinite(item)
+    )
+  ) {
+    return null;
+  }
+
+  const [
+    west,
+    south,
+    east,
+    north
+  ] = parts;
+
+  return {
+    west,
+    south,
+    east,
+    north
+  };
+}
+
+function haversineKm(
+  lat1,
+  lng1,
+  lat2,
+  lng2
+) {
+  if (
+    [
+      lat1,
+      lng1,
+      lat2,
+      lng2
+    ].some(
+      (value) =>
+        !Number.isFinite(
+          Number(value)
+        )
+    )
+  ) {
+    return null;
+  }
+
+  const toRad =
+    (deg) =>
+      (Number(deg) * Math.PI) /
+      180;
+
+  const dLat =
+    toRad(lat2 - lat1);
+  const dLng =
+    toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(
+      toRad(lat1)
+    ) *
+      Math.cos(
+        toRad(lat2)
+      ) *
+      Math.sin(dLng / 2) ** 2;
+
+  return (
+    6371 *
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    )
+  );
+}
+
+function averageCenter(
+  items
+) {
+  const coords =
+    (items || []).filter(
+      (item) =>
+        Number.isFinite(item.lat) &&
+        Number.isFinite(item.lng)
+    );
+
+  if (!coords.length) {
+    return {
+      lat: DEFAULT_LAT,
+      lng: DEFAULT_LNG
+    };
+  }
+
+  return {
+    lat:
+      coords.reduce(
+        (sum, item) =>
+          sum + Number(item.lat),
+        0
+      ) / coords.length,
+    lng:
+      coords.reduce(
+        (sum, item) =>
+          sum + Number(item.lng),
+        0
+      ) / coords.length
+  };
+}
+
+function resolveCollectionKey(
+  token
+) {
+  const user =
+    resolveUserFromToken(
+      token
+    );
+
+  return user
+    ? `user:${user.id}`
+    : "guest";
+}
+
+function resolveUserFromToken(
+  token
+) {
+  let user =
+    authStore.verifyToken(
+      token
+    );
+
+  if (!user && token) {
+    try {
+      const decoded =
+        jwt.verify(
+          token,
+          JWT_SECRET
+        );
+
+      user = {
+        id: decoded.id,
+        username:
+          decoded.username,
+        full_name:
+          decoded.full_name,
+        role:
+          decoded.role
+      };
+    } catch {
+      user = null;
+    }
+  }
+
+  return user;
+}
+
+function formStorePath() {
+  return path.join(
+    __dirname,
+    "..",
+    "..",
+    "data",
+    "forms.json"
+  );
+}
+
+function ensureFormStore() {
+  const target =
+    formStorePath();
+
+  fs.mkdirSync(
+    path.dirname(target),
+    {
+      recursive: true
+    }
   );
 
-  const ordered = result.rows.map(mapProperty);
-  const order = new Map(uniqueIds.map((id, index) => [id, index]));
-  return ordered.sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0));
+  if (!fs.existsSync(target)) {
+    fs.writeFileSync(
+      target,
+      JSON.stringify(
+        {
+          nextLeadId: 1,
+          nextAppointmentId: 1,
+          nextPasswordResetRequestId: 1,
+          nextAgentReviewId: 1,
+          leads: [],
+          appointments: [],
+          passwordResetRequests: [],
+          agentReviews: []
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
+  }
+
+  const store = JSON.parse(
+    fs.readFileSync(
+      target,
+      "utf8"
+    )
+  );
+
+  if (
+    store.nextLeadId ===
+    undefined
+  ) {
+    store.nextLeadId = 1;
+  }
+
+  if (
+    store.nextAppointmentId ===
+    undefined
+  ) {
+    store.nextAppointmentId = 1;
+  }
+
+  if (
+    store.nextPasswordResetRequestId ===
+      undefined ||
+    store.nextPasswordResetRequestId ===
+      null ||
+    Number.isNaN(
+      Number(
+        store.nextPasswordResetRequestId
+      )
+    )
+  ) {
+    store.nextPasswordResetRequestId = 1;
+  }
+
+  if (
+    store.nextAgentReviewId ===
+      undefined ||
+    store.nextAgentReviewId ===
+      null ||
+    Number.isNaN(
+      Number(
+        store.nextAgentReviewId
+      )
+    )
+  ) {
+    store.nextAgentReviewId = 1;
+  }
+
+  store.leads ||= [];
+  store.appointments ||= [];
+  store.passwordResetRequests ||= [];
+  store.agentReviews ||= [];
+
+  saveFormStore(store);
+
+  return store;
+}
+
+function saveFormStore(
+  store
+) {
+  fs.writeFileSync(
+    formStorePath(),
+    JSON.stringify(
+      store,
+      null,
+      2
+    ),
+    "utf8"
+  );
+}
+
+function summarizeAgentReviews(
+  agentId
+) {
+  const store =
+    ensureFormStore();
+
+  const reviews =
+    (store.agentReviews || [])
+    .filter(
+      (item) =>
+        String(item.agent_id) ===
+        String(agentId)
+    )
+    .sort(
+      (a, b) =>
+        new Date(
+          b.created_at
+        ).getTime() -
+        new Date(
+          a.created_at
+        ).getTime()
+    );
+
+  const count =
+    reviews.length;
+  const rating =
+    count
+      ? Number(
+          (
+            reviews.reduce(
+              (sum, item) =>
+                sum +
+                Number(
+                  item.rating || 0
+                ),
+              0
+            ) / count
+          ).toFixed(1)
+        )
+      : 5;
+
+  return {
+    rating,
+    rating_count: count,
+    reviews
+  };
 }
 
 function ensureMediaDir() {
-  const dir = path.join(__dirname, '..', '..', '..', 'media', 'properties');
-  fs.mkdirSync(dir, { recursive: true });
+  const dir =
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "media",
+      "properties"
+    );
+
+  fs.mkdirSync(
+    dir,
+    {
+      recursive: true
+    }
+  );
+
   return dir;
 }
 
 function safeFilename(name) {
-  return String(name || 'upload').replace(/[^a-zA-Z0-9._-]+/g, '_');
+  return String(
+    name || "upload"
+  ).replace(
+    /[^a-zA-Z0-9._-]+/g,
+    "_"
+  );
 }
 
-function saveBase64File(payload, fallbackName = 'upload') {
-  const file = payload.file || payload.imageFile || payload.upload;
-  if (!file) return null;
-  if (typeof file === 'string' && file.startsWith('data:')) {
-    const match = file.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) throw new Error('invalid data url');
+function saveBase64File(
+  payload,
+  fallbackName = "upload"
+) {
+  const file =
+    payload.file ||
+    payload.imageFile ||
+    payload.upload;
+
+  if (!file) {
+    return null;
+  }
+
+  if (
+    typeof file === "string" &&
+    file.startsWith("data:")
+  ) {
+    const match =
+      file.match(
+        /^data:([^;]+);base64,(.+)$/
+      );
+
+    if (!match) {
+      throw new Error(
+        "invalid data url"
+      );
+    }
+
     const mime = match[1];
     const base64 = match[2];
-    const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : mime === 'image/jpeg' || mime === 'image/jpg' ? 'jpg' : 'bin';
-    const fileName = `${Date.now()}_${safeFilename(fallbackName)}.${ext}`;
-    const dir = ensureMediaDir();
-    const target = path.join(dir, fileName);
-    fs.writeFileSync(target, Buffer.from(base64, 'base64'));
+    const ext =
+      mime === "image/png"
+        ? "png"
+        : mime === "image/webp"
+        ? "webp"
+        : mime === "image/jpeg" ||
+          mime === "image/jpg"
+        ? "jpg"
+        : "bin";
+
+    const fileName =
+      `${Date.now()}_${safeFilename(
+        fallbackName
+      )}.${ext}`;
+
+    const target =
+      path.join(
+        ensureMediaDir(),
+        fileName
+      );
+
+    fs.writeFileSync(
+      target,
+      Buffer.from(
+        base64,
+        "base64"
+      )
+    );
+
     return `properties/${fileName}`;
   }
+
   return String(file);
 }
 
-function normalizeOrder(value) {
+function normalizeOrder(
+  value
+) {
   const n = Number(value);
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.floor(n));
+
+  if (
+    !Number.isFinite(n)
+  ) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.floor(n)
+  );
 }
 
-function parseBbox(value) {
-  if (!value) return null;
-  const parts = String(value).split(',').map((item) => toNumber(item.trim()));
-  if (parts.length !== 4 || parts.some((item) => item === null)) return null;
-  return parts;
+function pointSql(
+  lngParam,
+  latParam
+) {
+  return `
+    ST_SetSRID(
+      ST_MakePoint(
+        ${lngParam},
+        ${latParam}
+      ),
+      4326
+    )::geography
+  `;
 }
 
-function pointSql(lngParam, latParam) {
-  return `ST_SetSRID(ST_MakePoint(${lngParam}, ${latParam}), 4326)::geography`;
-}
+async function listProperties(
+  query = {}
+) {
+  const limit =
+    clampLimit(
+      query.limit,
+      200
+    );
+  const page =
+    clampPage(query.page);
+  const offset =
+    (page - 1) * limit;
 
-function buildPropertyFilters(query, values, alias = 'p') {
-  const where = [];
-  const q = query.q || query.keyword;
-  const bbox = parseBbox(query.bbox);
-
-  if (q) {
-    values.push(`%${q}%`);
-    where.push(`(${alias}.title ILIKE $${values.length} OR ${alias}.address ILIKE $${values.length} OR ${alias}.description ILIKE $${values.length})`);
-  }
-  if (query.type) {
-    values.push(query.type);
-    where.push(`${alias}.property_type = $${values.length}`);
-  }
-  if (query.status) {
-    values.push(query.status);
-    where.push(`${alias}.listing_status = $${values.length}`);
-  }
-  if (query.priceMin) {
-    values.push(query.priceMin);
-    where.push(`${alias}.price >= $${values.length}`);
-  }
-  if (query.priceMax) {
-    values.push(query.priceMax);
-    where.push(`${alias}.price <= $${values.length}`);
-  }
-  if (query.areaMin) {
-    values.push(query.areaMin);
-    where.push(`${alias}.area >= $${values.length}`);
-  }
-  if (query.areaMax) {
-    values.push(query.areaMax);
-    where.push(`${alias}.area <= $${values.length}`);
-  }
-  if (query.featured === 'true') {
-    where.push(`${alias}.is_featured = true`);
-  }
-  // PostGIS is optional in this Node port. If the local extension is not installed,
-  // ignore bbox filters instead of breaking the whole API.
-
-  return where;
-}
-
-async function listProperties(query = {}) {
   const values = [];
-  const where = buildPropertyFilters(query, values);
-  const limit = clampLimit(query.limit, 200);
-  values.push(limit);
+  const where = [];
+  const bbox =
+    parseBbox(query.bbox);
 
-  const sortMap = {
-    newest: 'p.created_at DESC',
-    price_asc: 'p.price ASC NULLS LAST, p.created_at DESC',
-    price_desc: 'p.price DESC NULLS LAST, p.created_at DESC',
-    area_asc: 'p.area ASC NULLS LAST, p.created_at DESC',
-    area_desc: 'p.area DESC NULLS LAST, p.created_at DESC',
-  };
-  const sort = sortMap[query.sort] || 'p.is_featured DESC, p.created_at DESC';
-
-  const result = await pool.query(
-    `SELECT ${propertySelect()}
-     FROM properties_property p
-     LEFT JOIN accounts_agent a ON a.id = p.agent_id
-     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-     ORDER BY ${sort}
-     LIMIT $${values.length}`,
-    values
-  );
-
-  return result.rows.map(mapProperty);
-}
-
-async function listMapData(query = {}) {
-  const items = await listProperties({ ...query, limit: query.limit || 250 });
-  return {
-    center: {
-      lat: toNumber(query.lat) || DEFAULT_LAT,
-      lng: toNumber(query.lng) || DEFAULT_LNG,
-    },
-    items,
-  };
-}
-
-async function getPropertyById(id) {
-  const result = await pool.query(
-    `SELECT ${propertySelect()}
-     FROM properties_property p
-     LEFT JOIN accounts_agent a ON a.id = p.agent_id
-     WHERE p.id = $1`,
-    [id]
-  );
-  if (!result.rows[0]) return null;
-
-  const row = result.rows[0];
-  const property = mapProperty(row);
-
-  const images = await listPropertyImages(id);
-
-  const amenities = await pool.query(
-    `SELECT a.id,
-            a.name,
-            a.amenity_type,
-            ST_Y(a.location::geometry) AS lat,
-            ST_X(a.location::geometry) AS lng,
-            ST_Distance(a.location, p.location) / 1000.0 AS distance_km,
-            a.created_at
-     FROM properties_property_amenities pa
-     JOIN properties_amenity a ON a.id = pa.amenity_id
-     JOIN properties_property p ON p.id = pa.property_id
-     WHERE pa.property_id = $1
-     ORDER BY a.name ASC`,
-    [id]
-  );
-
-  let similarProperties = [];
-  let nearbyAmenities = [];
-  let locationScore = 50;
-
-  if (property.lat !== null && property.lng !== null) {
-    const similar = await pool.query(
-      `SELECT ${propertySelect()},
-              ROUND((ST_Distance(p.location, ${pointSql('$1', '$2')}) / 1000.0)::numeric, 2) AS distance_km
-       FROM properties_property p
-       LEFT JOIN accounts_agent a ON a.id = p.agent_id
-       WHERE p.id <> $3 AND p.property_type = $4 AND p.listing_status <> 'hidden'
-       ORDER BY ST_Distance(p.location, ${pointSql('$1', '$2')}) ASC, p.is_featured DESC, p.created_at DESC
-       LIMIT 6`,
-      [property.lng, property.lat, id, row.property_type]
+  if (query.type) {
+    values.push(
+      String(query.type)
     );
-    similarProperties = similar.rows.map((item) => ({ ...mapProperty(item), distance_km: item.distance_km === null ? null : Number(item.distance_km) }));
-
-    const nearbyAmenitiesResult = await pool.query(
-      `SELECT a.id,
-              a.name,
-              a.amenity_type,
-              ST_Y(a.location::geometry) AS lat,
-              ST_X(a.location::geometry) AS lng,
-              ROUND((ST_Distance(a.location, ${pointSql('$1', '$2')}) / 1000.0)::numeric, 2) AS distance_km,
-              a.created_at
-       FROM properties_amenity a
-       WHERE a.location IS NOT NULL AND ST_DWithin(a.location, ${pointSql('$1', '$2')}, 2500)
-       ORDER BY ST_Distance(a.location, ${pointSql('$1', '$2')}) ASC
-       LIMIT 12`,
-      [property.lng, property.lat]
+    where.push(
+      `p.property_type = $${values.length}`
     );
-    nearbyAmenities = nearbyAmenitiesResult.rows.map(mapAmenity);
-
-    const amenityCount = nearbyAmenities.length;
-    locationScore = Math.min(100, Math.round(55 + amenityCount * 3 + (property.is_featured ? 8 : 0)));
   }
+
+  if (query.status) {
+    values.push(
+      String(query.status)
+    );
+    where.push(
+      `p.listing_status = $${values.length}`
+    );
+  }
+
+  if (
+    query.featured === true ||
+    query.featured === "true"
+  ) {
+    where.push(
+      `p.is_featured = true`
+    );
+  }
+
+  if (query.q) {
+    values.push(
+      `%${String(query.q).trim()}%`
+    );
+    where.push(
+      `(p.title ILIKE $${values.length} OR p.address ILIKE $${values.length})`
+    );
+  }
+
+  if (
+    query.priceMin !==
+      undefined &&
+    query.priceMin !== ""
+  ) {
+    values.push(
+      Number(query.priceMin)
+    );
+    where.push(
+      `p.price >= $${values.length}`
+    );
+  }
+
+  if (
+    query.priceMax !==
+      undefined &&
+    query.priceMax !== ""
+  ) {
+    values.push(
+      Number(query.priceMax)
+    );
+    where.push(
+      `p.price <= $${values.length}`
+    );
+  }
+
+  if (
+    query.areaMin !==
+      undefined &&
+    query.areaMin !== ""
+  ) {
+    values.push(
+      Number(query.areaMin)
+    );
+    where.push(
+      `p.area >= $${values.length}`
+    );
+  }
+
+  if (
+    query.areaMax !==
+      undefined &&
+    query.areaMax !== ""
+  ) {
+    values.push(
+      Number(query.areaMax)
+    );
+    where.push(
+      `p.area <= $${values.length}`
+    );
+  }
+
+  if (bbox) {
+    values.push(
+      bbox.west,
+      bbox.south,
+      bbox.east,
+      bbox.north
+    );
+    where.push(
+      `
+      ST_X(p.location::geometry) BETWEEN $${values.length - 3} AND $${values.length - 1}
+      AND ST_Y(p.location::geometry) BETWEEN $${values.length - 2} AND $${values.length}
+      `
+    );
+  }
+
+  const orderBy =
+    query.sort === "price_asc"
+      ? "p.price ASC NULLS LAST"
+      : query.sort ===
+        "price_desc"
+      ? "p.price DESC NULLS LAST"
+      : query.sort ===
+        "area_asc"
+      ? "p.area ASC NULLS LAST"
+      : "p.is_featured DESC, p.created_at DESC";
+
+  values.push(limit, offset);
+
+  const result =
+    await pool.query(
+      `
+      SELECT ${propertySelect()}
+      FROM properties_property p
+      LEFT JOIN accounts_agent a
+      ON a.id = p.agent_id
+      ${
+        where.length
+          ? `WHERE ${where.join(" AND ")}`
+          : ""
+      }
+      ORDER BY ${orderBy}
+      LIMIT $${values.length - 1}
+      OFFSET $${values.length}
+      `,
+      values
+    );
+
+  return result.rows.map(
+    mapProperty
+  );
+}
+
+async function listPropertiesPage(
+  query = {}
+) {
+  const limit =
+    clampLimit(
+      query.limit,
+      100
+    );
+  const page =
+    clampPage(query.page);
+
+  const values = [];
+  const where = [];
+  const bbox =
+    parseBbox(query.bbox);
+
+  if (query.type) {
+    values.push(
+      String(query.type)
+    );
+    where.push(
+      `p.property_type = $${values.length}`
+    );
+  }
+
+  if (query.status) {
+    values.push(
+      String(query.status)
+    );
+    where.push(
+      `p.listing_status = $${values.length}`
+    );
+  }
+
+  if (
+    query.featured === true ||
+    query.featured === "true"
+  ) {
+    where.push(
+      `p.is_featured = true`
+    );
+  }
+
+  if (query.q) {
+    values.push(
+      `%${String(query.q).trim()}%`
+    );
+    where.push(
+      `(p.title ILIKE $${values.length} OR p.address ILIKE $${values.length})`
+    );
+  }
+
+  if (
+    query.priceMin !==
+      undefined &&
+    query.priceMin !== ""
+  ) {
+    values.push(
+      Number(query.priceMin)
+    );
+    where.push(
+      `p.price >= $${values.length}`
+    );
+  }
+
+  if (
+    query.priceMax !==
+      undefined &&
+    query.priceMax !== ""
+  ) {
+    values.push(
+      Number(query.priceMax)
+    );
+    where.push(
+      `p.price <= $${values.length}`
+    );
+  }
+
+  if (
+    query.areaMin !==
+      undefined &&
+    query.areaMin !== ""
+  ) {
+    values.push(
+      Number(query.areaMin)
+    );
+    where.push(
+      `p.area >= $${values.length}`
+    );
+  }
+
+  if (
+    query.areaMax !==
+      undefined &&
+    query.areaMax !== ""
+  ) {
+    values.push(
+      Number(query.areaMax)
+    );
+    where.push(
+      `p.area <= $${values.length}`
+    );
+  }
+
+  if (bbox) {
+    values.push(
+      bbox.west,
+      bbox.south,
+      bbox.east,
+      bbox.north
+    );
+    where.push(
+      `
+      ST_X(p.location::geometry) BETWEEN $${values.length - 3} AND $${values.length - 1}
+      AND ST_Y(p.location::geometry) BETWEEN $${values.length - 2} AND $${values.length}
+      `
+    );
+  }
+
+  const orderBy =
+    query.sort === "price_asc"
+      ? "p.price ASC NULLS LAST"
+      : query.sort ===
+        "price_desc"
+      ? "p.price DESC NULLS LAST"
+      : query.sort ===
+        "area_asc"
+      ? "p.area ASC NULLS LAST"
+      : "p.is_featured DESC, p.created_at DESC";
+
+  const whereClause =
+    where.length
+      ? `WHERE ${where.join(" AND ")}`
+      : "";
+
+  const countResult =
+    await pool.query(
+      `
+      SELECT COUNT(*)::int AS total
+      FROM properties_property p
+      ${whereClause}
+      `,
+      values
+    );
+
+  const totalItems =
+    countResult.rows[0]
+      ?.total || 0;
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        totalItems / limit
+      )
+    );
+  const currentPage =
+    Math.min(
+      page,
+      totalPages
+    );
+  const offset =
+    (currentPage - 1) * limit;
+
+  const dataValues = [
+    ...values,
+    limit,
+    offset
+  ];
+
+  const result =
+    await pool.query(
+      `
+      SELECT ${propertySelect()}
+      FROM properties_property p
+      LEFT JOIN accounts_agent a
+      ON a.id = p.agent_id
+      ${whereClause}
+      ORDER BY ${orderBy}
+      LIMIT $${dataValues.length - 1}
+      OFFSET $${dataValues.length}
+      `,
+      dataValues
+    );
+
+  return {
+    items:
+      result.rows.map(
+        mapProperty
+      ),
+    pagination: {
+      page:
+        currentPage,
+      limit,
+      totalItems,
+      totalPages,
+      hasPrev:
+        currentPage > 1,
+      hasNext:
+        currentPage <
+        totalPages
+    }
+  };
+}
+
+async function listMapData(
+  query = {}
+) {
+  const items =
+    await listProperties({
+      ...query,
+      limit:
+        query.limit || 250
+    });
+
+  return {
+    center:
+      Number.isFinite(
+        toNumber(query.lat)
+      ) &&
+      Number.isFinite(
+        toNumber(query.lng)
+      )
+        ? {
+            lat:
+              toNumber(
+                query.lat
+              ),
+            lng:
+              toNumber(
+                query.lng
+              )
+          }
+        : averageCenter(items),
+    items
+  };
+}
+
+async function listPropertyImages(
+  propertyId
+) {
+  const result =
+    await pool.query(
+      `
+      SELECT
+        id,
+        property_id,
+        image,
+        caption,
+        is_primary,
+        sort_order,
+        created_at
+      FROM properties_propertyimage
+      WHERE property_id = $1
+      ORDER BY
+      is_primary DESC,
+      sort_order ASC,
+      id ASC
+      `,
+      [propertyId]
+    );
+
+  return result.rows.map(
+    (row) => ({
+      ...row,
+      image:
+        toMediaUrl(row.image)
+    })
+  );
+}
+
+async function getPropertyById(
+  id
+) {
+  const result =
+    await pool.query(
+      `
+      SELECT ${propertySelect()}
+      FROM properties_property p
+      LEFT JOIN accounts_agent a
+      ON a.id = p.agent_id
+      WHERE p.id=$1
+      `,
+      [id]
+    );
+
+  if (
+    !result.rows[0]
+  ) {
+    return null;
+  }
+
+  const property =
+    mapProperty(
+      result.rows[0]
+    );
+
+  const [
+    images,
+    amenities,
+    similar
+  ] = await Promise.all([
+    listPropertyImages(id),
+    listNearbyAmenities({
+      lat: property.lat,
+      lng: property.lng,
+      radiusKm: 3,
+      limit: 4
+    }),
+    listProperties({
+      type:
+        property.property_type,
+      limit: 4
+    })
+  ]);
 
   return {
     ...property,
     images,
-    amenities: amenities.rows.map(mapAmenity),
-    similar_properties: similarProperties,
-    nearby_amenities: nearbyAmenities,
-    location_score: locationScore,
+    nearby_amenities:
+      amenities.items,
+    similar_properties:
+      similar
+      .filter(
+        (item) =>
+          String(item.id) !==
+          String(id)
+      )
+      .slice(0, 3),
+    location_score:
+      property.lat !== null &&
+      property.lng !== null
+        ? 8.8
+        : null,
+    agent:
+      property.agent
+        ? {
+            ...property.agent,
+            ...summarizeAgentReviews(
+              property.agent.id
+            )
+          }
+        : null
   };
 }
 
-async function listPropertyImages(propertyId) {
-  const result = await pool.query(
-    `SELECT id, property_id, image, caption, is_primary, sort_order, created_at
-     FROM properties_propertyimage
-     WHERE property_id = $1
-     ORDER BY is_primary DESC, sort_order ASC, id ASC`,
-    [propertyId]
-  );
-  return result.rows.map((row) => ({
-    id: row.id,
-    property_id: row.property_id,
-    image: toMediaUrl(row.image),
-    caption: row.caption,
-    is_primary: row.is_primary,
-    sort_order: row.sort_order,
-    created_at: row.created_at,
-  }));
-}
-
-async function createProperty(payload) {
+async function createProperty(
+  payload
+) {
   const {
     title,
-    description = '',
-    property_type = 'apartment',
-    listing_status = 'pending',
+    description = "",
+    property_type = "apartment",
+    listing_status = "pending",
     price = null,
     area = null,
-    address = '',
+    address = "",
     agent_id = null,
     is_featured = false,
-    lat = null,
-    lng = null,
+    lat = DEFAULT_LAT,
+    lng = DEFAULT_LNG
   } = payload;
 
-  if (!title) throw new Error('title is required');
+  if (!title) {
+    throw new Error(
+      "title is required"
+    );
+  }
 
-  const result = await pool.query(
-    `INSERT INTO properties_property(title, description, property_type, listing_status, price, area, address, location, agent_id, is_featured, created_at, updated_at)
-     VALUES($1,$2,$3,$4,$5,$6,$7, ${pointSql('$9', '$8')}, $10, $11, NOW(), NOW())
-     RETURNING *`,
-    [title, description, property_type, listing_status, price, area, address, lat, lng, agent_id, is_featured]
+  const result =
+    await pool.query(
+      `
+      INSERT INTO
+      properties_property
+      (
+        title,
+        description,
+        property_type,
+        listing_status,
+        price,
+        area,
+        address,
+        location,
+        agent_id,
+        is_featured,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        ${pointSql("$9", "$8")},
+        $10,
+        $11,
+        NOW(),
+        NOW()
+      )
+      RETURNING id
+      `,
+      [
+        title,
+        description,
+        property_type,
+        listing_status,
+        price,
+        area,
+        address,
+        lat,
+        lng,
+        agent_id,
+        is_featured
+      ]
+    );
+
+  return getPropertyById(
+    result.rows[0].id
   );
-  return mapProperty(result.rows[0]);
 }
 
-async function updateProperty(id, payload) {
-  const current = await pool.query(
-    `SELECT *, ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
-     FROM properties_property
-     WHERE id = $1`,
-    [id]
-  );
-  if (!current.rows[0]) return null;
+async function updateProperty(
+  id,
+  payload
+) {
+  const current =
+    await pool.query(
+      `
+      SELECT *
+      FROM properties_property
+      WHERE id=$1
+      `,
+      [id]
+    );
 
-  const row = current.rows[0];
-  const next = {
-    title: payload.title ?? row.title,
-    description: payload.description ?? row.description,
-    property_type: payload.property_type ?? row.property_type,
-    listing_status: payload.listing_status ?? row.listing_status,
-    price: payload.price ?? row.price,
-    area: payload.area ?? row.area,
-    address: payload.address ?? row.address,
-    lat: payload.lat ?? row.lat,
-    lng: payload.lng ?? row.lng,
-    is_featured: payload.is_featured ?? row.is_featured,
-  };
+  if (
+    !current.rows[0]
+  ) {
+    return null;
+  }
 
-  const result = await pool.query(
-    `UPDATE properties_property
-     SET title = $1,
-         description = $2,
-         property_type = $3,
-         listing_status = $4,
-         price = $5,
-         area = $6,
-         address = $7,
-         location = ${pointSql('$9', '$8')},
-         is_featured = $10,
-         updated_at = NOW()
-     WHERE id = $11
-     RETURNING *`,
-    [next.title, next.description, next.property_type, next.listing_status, next.price, next.area, next.address, next.lat, next.lng, next.is_featured, id]
+  const row =
+    current.rows[0];
+
+  const currentLocation =
+    await pool.query(
+      `
+      SELECT
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng
+      FROM properties_property
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+  const location =
+    currentLocation.rows[0] || {
+      lat: DEFAULT_LAT,
+      lng: DEFAULT_LNG
+    };
+
+  await pool.query(
+    `
+    UPDATE properties_property
+    SET
+      title = $1,
+      description = $2,
+      property_type = $3,
+      listing_status = $4,
+      price = $5,
+      area = $6,
+      address = $7,
+      location = ${pointSql("$9", "$8")},
+      updated_at = NOW()
+    WHERE id = $10
+    `,
+    [
+      payload.title ??
+        row.title,
+      payload.description ??
+        row.description,
+      payload.property_type ??
+        row.property_type,
+      payload.listing_status ??
+        row.listing_status,
+      payload.price ??
+        row.price,
+      payload.area ??
+        row.area,
+      payload.address ??
+        row.address,
+      payload.lat ??
+        location.lat ??
+        DEFAULT_LAT,
+      payload.lng ??
+        location.lng ??
+        DEFAULT_LNG,
+      id
+    ]
   );
-  return mapProperty(result.rows[0]);
+
+  return getPropertyById(id);
 }
 
-async function updatePropertyStage(id, listing_status) {
-  const result = await pool.query(
-    `UPDATE properties_property
-     SET listing_status = $2,
-         updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
-    [id, listing_status]
-  );
-  return result.rows[0] ? mapProperty(result.rows[0]) : null;
+async function updatePropertyStage(
+  id,
+  listing_status
+) {
+  const result =
+    await pool.query(
+      `
+      UPDATE properties_property
+      SET
+        listing_status = $2,
+        updated_at = NOW()
+      WHERE id = $1
+      RETURNING id
+      `,
+      [
+        id,
+        listing_status
+      ]
+    );
+
+  return result.rows[0]
+    ? getPropertyById(id)
+    : null;
 }
 
-async function deleteProperty(id) {
-  const result = await pool.query('DELETE FROM properties_property WHERE id = $1 RETURNING id', [id]);
+async function deleteProperty(
+  id
+) {
+  const result =
+    await pool.query(
+      `
+      DELETE
+      FROM properties_property
+      WHERE id=$1
+      RETURNING id
+      `,
+      [id]
+    );
+
   return result.rowCount > 0;
 }
 
-async function listAmenities(query = {}) {
-  const values = [];
-  const where = [];
-  if (query.type) {
-    values.push(query.type);
-    where.push(`amenity_type = $${values.length}`);
+async function createPropertyImage(
+  propertyId,
+  payload
+) {
+  const imagePath =
+    saveBase64File(
+      payload,
+      payload.fileName ||
+        payload.caption ||
+        "property"
+    );
+
+  if (!imagePath) {
+    throw new Error(
+      "image file is required"
+    );
   }
-  const limit = clampLimit(query.limit, 500);
-  values.push(limit);
 
-  const result = await pool.query(
-    `SELECT id,
-            name,
-            amenity_type,
-            NULL::double precision AS lat,
-            NULL::double precision AS lng,
-            created_at
-     FROM properties_amenity
-     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-     ORDER BY created_at DESC
-     LIMIT $${values.length}`,
-    values
-  );
-  return result.rows.map(mapAmenity);
-}
+  const result =
+    await pool.query(
+      `
+      INSERT INTO properties_propertyimage
+      (
+        property_id,
+        image,
+        caption,
+        is_primary,
+        sort_order,
+        created_at
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        COALESCE($4, false),
+        $5,
+        NOW()
+      )
+      RETURNING
+        id,
+        property_id,
+        image,
+        caption,
+        is_primary,
+        sort_order,
+        created_at
+      `,
+      [
+        propertyId,
+        imagePath,
+        payload.caption || "",
+        payload.is_primary ??
+          false,
+        normalizeOrder(
+          payload.sort_order
+        )
+      ]
+    );
 
-async function listNearbyProperties(query = {}) {
-  const lat = toNumber(query.lat ?? query.latitude) ?? DEFAULT_LAT;
-  const lng = toNumber(query.lng ?? query.lon ?? query.longitude) ?? DEFAULT_LNG;
-  const radiusKm = Math.max(0.1, toNumber(query.radiusKm ?? query.radius) || 5);
-  const items = await listProperties({ ...query, limit: query.limit || 50 });
-  return {
-    center: { lat, lng },
-    radiusKm,
-    items: items.map((item) => ({ ...item, distance_km: null })),
-  };
-}
-
-async function listNearbyAmenities(query = {}) {
-  const lat = toNumber(query.lat ?? query.latitude) ?? DEFAULT_LAT;
-  const lng = toNumber(query.lng ?? query.lon ?? query.longitude) ?? DEFAULT_LNG;
-  const radiusKm = Math.max(0.1, toNumber(query.radiusKm ?? query.radius) || 3);
-  return {
-    center: { lat, lng },
-    radiusKm,
-    items: await listAmenities({ ...query, limit: query.limit || 100 }),
-  };
-}
-
-async function createPropertyImage(propertyId, payload) {
-  const image = saveBase64File(payload, payload.caption || payload.name || 'property');
-  const finalImage = image || payload.image || payload.image_url || payload.url;
-  if (!finalImage) throw new Error('image is required');
-  const result = await pool.query(
-    `INSERT INTO properties_propertyimage(property_id, image, caption, is_primary, sort_order, created_at)
-     VALUES($1, $2, $3, $4, $5, NOW())
-     RETURNING id, property_id, image, caption, is_primary, sort_order, created_at`,
-    [propertyId, finalImage, payload.caption || '', Boolean(payload.is_primary), normalizeOrder(payload.sort_order ?? 0)]
-  );
-  if (payload.is_primary) {
-    await setPrimaryImage(result.rows[0].id);
-  }
   return {
     ...result.rows[0],
-    image: toMediaUrl(result.rows[0].image),
+    image:
+      toMediaUrl(
+        result.rows[0].image
+      )
   };
 }
 
-async function setPrimaryImage(imageId) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const current = await client.query('SELECT id, property_id FROM properties_propertyimage WHERE id = $1 LIMIT 1', [imageId]);
-    if (!current.rows[0]) {
-      await client.query('ROLLBACK');
-      return null;
-    }
-    const propertyId = current.rows[0].property_id;
-    await client.query('UPDATE properties_propertyimage SET is_primary = false WHERE property_id = $1', [propertyId]);
-    await client.query('UPDATE properties_propertyimage SET is_primary = true WHERE id = $1', [imageId]);
-    await client.query('COMMIT');
-    return current.rows[0];
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
+async function setPrimaryImage(
+  imageId
+) {
+  const current =
+    await pool.query(
+      `
+      SELECT id, property_id
+      FROM properties_propertyimage
+      WHERE id = $1
+      `,
+      [imageId]
+    );
+
+  if (
+    !current.rows[0]
+  ) {
+    return null;
   }
+
+  await pool.query(
+    `
+    UPDATE properties_propertyimage
+    SET is_primary = false
+    WHERE property_id = $1
+    `,
+    [current.rows[0].property_id]
+  );
+
+  const result =
+    await pool.query(
+      `
+      UPDATE properties_propertyimage
+      SET is_primary = true
+      WHERE id = $1
+      RETURNING
+        id,
+        property_id,
+        image,
+        caption,
+        is_primary,
+        sort_order,
+        created_at
+      `,
+      [imageId]
+    );
+
+  return {
+    ...result.rows[0],
+    image:
+      toMediaUrl(
+        result.rows[0].image
+      )
+  };
 }
 
-async function deletePropertyImage(imageId) {
-  const result = await pool.query('DELETE FROM properties_propertyimage WHERE id = $1 RETURNING id', [imageId]);
+async function deletePropertyImage(
+  imageId
+) {
+  const result =
+    await pool.query(
+      `
+      DELETE
+      FROM properties_propertyimage
+      WHERE id = $1
+      RETURNING id
+      `,
+      [imageId]
+    );
+
   return result.rowCount > 0;
 }
 
-async function reorderPropertyImage(imageId, sortOrder) {
-  const result = await pool.query(
-    `UPDATE properties_propertyimage
-     SET sort_order = $2
-     WHERE id = $1
-     RETURNING id, property_id, image, caption, is_primary, sort_order, created_at`,
-    [imageId, normalizeOrder(sortOrder ?? 0)]
+async function reorderPropertyImage(
+  imageId,
+  sortOrder
+) {
+  const result =
+    await pool.query(
+      `
+      UPDATE properties_propertyimage
+      SET sort_order = $2
+      WHERE id = $1
+      RETURNING
+        id,
+        property_id,
+        image,
+        caption,
+        is_primary,
+        sort_order,
+        created_at
+      `,
+      [
+        imageId,
+        normalizeOrder(
+          sortOrder
+        )
+      ]
+    );
+
+  return result.rows[0]
+    ? {
+        ...result.rows[0],
+        image:
+          toMediaUrl(
+            result.rows[0].image
+          )
+      }
+    : null;
+}
+
+async function listNearbyProperties(
+  query = {}
+) {
+  const center = {
+    lat:
+      toNumber(query.lat) ||
+      DEFAULT_LAT,
+    lng:
+      toNumber(query.lng) ||
+      DEFAULT_LNG
+  };
+
+  const radiusKm =
+    toNumber(
+      query.radiusKm
+    ) || 5;
+
+  const items =
+    await listProperties({
+      ...query,
+      limit:
+        query.limit || 100
+    });
+
+  return {
+    center,
+    radiusKm,
+    items:
+      items
+      .map((item) => {
+        const distance =
+          haversineKm(
+            center.lat,
+            center.lng,
+            item.lat,
+            item.lng
+          );
+
+        return {
+          ...item,
+          distance_km:
+            distance === null
+              ? null
+              : Number(
+                  distance.toFixed(2)
+                )
+        };
+      })
+      .filter(
+        (item) =>
+          item.distance_km ===
+            null ||
+          item.distance_km <=
+            radiusKm
+      )
+      .sort(
+        (a, b) =>
+          (a.distance_km ?? 9999) -
+          (b.distance_km ?? 9999)
+      )
+      .slice(
+        0,
+        clampLimit(
+          query.limit,
+          100
+        )
+      )
+  };
+}
+
+async function listAmenities() {
+  const result =
+    await pool.query(
+      `
+      SELECT
+        id,
+        name,
+        amenity_type,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng,
+        created_at
+      FROM properties_amenity
+      ORDER BY id DESC
+      `
+    );
+
+  return result.rows.map(
+    mapAmenity
   );
-  return result.rows[0] ? { ...result.rows[0], image: toMediaUrl(result.rows[0].image) } : null;
+}
+
+async function createAmenity(
+  payload
+) {
+  if (!payload.name) {
+    throw new Error(
+      "name is required"
+    );
+  }
+
+  const result =
+    await pool.query(
+      `
+      INSERT INTO properties_amenity
+      (
+        name,
+        amenity_type,
+        location,
+        created_at
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        ${pointSql("$4", "$3")},
+        NOW()
+      )
+      RETURNING
+        id,
+        name,
+        amenity_type,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng,
+        created_at
+      `,
+      [
+        payload.name,
+        payload.amenity_type ||
+          payload.type ||
+          "other",
+        payload.lat ??
+          DEFAULT_LAT,
+        payload.lng ??
+          DEFAULT_LNG
+      ]
+    );
+
+  return mapAmenity(
+    result.rows[0]
+  );
+}
+
+async function updateAmenity(
+  id,
+  payload
+) {
+  const current =
+    await pool.query(
+      `
+      SELECT
+        id,
+        name,
+        amenity_type,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng,
+        created_at
+      FROM properties_amenity
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+  if (
+    !current.rows[0]
+  ) {
+    return null;
+  }
+
+  const row =
+    current.rows[0];
+
+  const result =
+    await pool.query(
+      `
+      UPDATE properties_amenity
+      SET
+        name = $1,
+        amenity_type = $2,
+        location = ${pointSql("$4", "$3")}
+      WHERE id = $5
+      RETURNING
+        id,
+        name,
+        amenity_type,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng,
+        created_at
+      `,
+      [
+        payload.name ??
+          row.name,
+        payload.amenity_type ??
+          payload.type ??
+          row.amenity_type,
+        payload.lat ??
+          row.lat ??
+          DEFAULT_LAT,
+        payload.lng ??
+          row.lng ??
+          DEFAULT_LNG,
+        id
+      ]
+    );
+
+  return mapAmenity(
+    result.rows[0]
+  );
+}
+
+async function deleteAmenity(
+  id
+) {
+  const result =
+    await pool.query(
+      `
+      DELETE
+      FROM properties_amenity
+      WHERE id = $1
+      RETURNING id
+      `,
+      [id]
+    );
+
+  return result.rowCount > 0;
+}
+
+async function listNearbyAmenities(
+  query = {}
+) {
+  const center = {
+    lat:
+      toNumber(query.lat) ||
+      DEFAULT_LAT,
+    lng:
+      toNumber(query.lng) ||
+      DEFAULT_LNG
+  };
+
+  const radiusKm =
+    toNumber(
+      query.radiusKm
+    ) || 3;
+
+  const items =
+    await listAmenities();
+
+  return {
+    center,
+    radiusKm,
+    items:
+      items
+      .map((item) => {
+        const distance =
+          haversineKm(
+            center.lat,
+            center.lng,
+            item.lat,
+            item.lng
+          );
+
+        return {
+          ...item,
+          distance_km:
+            distance === null
+              ? null
+              : Number(
+                  distance.toFixed(2)
+                )
+        };
+      })
+      .filter(
+        (item) =>
+          item.distance_km ===
+            null ||
+          item.distance_km <=
+            radiusKm
+      )
+      .sort(
+        (a, b) =>
+          (a.distance_km ?? 9999) -
+          (b.distance_km ?? 9999)
+      )
+      .slice(
+        0,
+        clampLimit(
+          query.limit,
+          100
+        )
+      )
+  };
 }
 
 async function listAgents() {
-  const result = await pool.query(
-    `SELECT a.id,
-            a.name,
-            a.phone,
-            a.email,
-            NULL::double precision AS lat,
-            NULL::double precision AS lng,
-            COUNT(p.id)::int AS property_count
-     FROM accounts_agent a
-     LEFT JOIN properties_property p ON p.agent_id = a.id
-     GROUP BY a.id
-     ORDER BY a.name ASC
-     LIMIT 100`
+  const result =
+    await pool.query(
+      `
+      SELECT
+        id,
+        name,
+        phone,
+        email
+      FROM accounts_agent
+      ORDER BY id DESC
+      `
+    );
+
+  return Promise.all(
+    result.rows.map((row) =>
+      getAgentById(row.id)
+    )
   );
-  return result.rows;
 }
 
-async function getAgentById(id) {
-  const agent = await pool.query(
-    `SELECT id, name, phone, email, NULL::double precision AS lat, NULL::double precision AS lng
-     FROM accounts_agent
-     WHERE id = $1`,
-    [id]
-  );
-  if (!agent.rows[0]) return null;
-  const props = await pool.query(
-    `SELECT ${propertySelect()}
-     FROM properties_property p
-     LEFT JOIN accounts_agent a ON a.id = p.agent_id
-     WHERE p.agent_id = $1
-     ORDER BY p.created_at DESC
-     LIMIT 6`,
-    [id]
-  );
-  return { ...agent.rows[0], properties: props.rows.map(mapProperty) };
-}
+async function getAgentById(
+  id
+) {
+  const result =
+    await pool.query(
+      `
+      SELECT
+        id,
+        name,
+        phone,
+        email
+      FROM accounts_agent
+      WHERE id = $1
+      `,
+      [id]
+    );
 
-async function assignNearestAgent(lat, lng) {
-  const locationLat = toNumber(lat) ?? DEFAULT_LAT;
-  const locationLng = toNumber(lng) ?? DEFAULT_LNG;
-  const result = await pool.query(
-    `SELECT id
-     FROM accounts_agent
-     WHERE location IS NOT NULL
-     ORDER BY ST_Distance(location, ${pointSql('$1', '$2')}) ASC
-     LIMIT 1`,
-    [locationLng, locationLat]
-  );
-  if (result.rows[0]) return result.rows[0].id;
-  const fallback = await pool.query('SELECT id FROM accounts_agent ORDER BY id ASC LIMIT 1');
-  return fallback.rows[0]?.id || null;
-}
+  const agent =
+    result.rows[0] || null;
 
-async function createLead(payload) {
-  const {
-    name,
-    phone = '',
-    budget = null,
-    notes = '',
-    property_interest = '',
-    pipeline_stage = 'new',
-    alert_enabled = false,
-    desired_lat = null,
-    desired_lng = null,
-    assigned_agent_id = null,
-  } = payload;
-  if (!name) throw new Error('name is required');
+  if (!agent) {
+    return null;
+  }
 
-  const lat = toNumber(desired_lat ?? payload.lat ?? payload.latitude) ?? DEFAULT_LAT;
-  const lng = toNumber(desired_lng ?? payload.lng ?? payload.longitude) ?? DEFAULT_LNG;
-  const agentId = assigned_agent_id || payload.agent_id || await assignNearestAgent(lat, lng);
+  const properties =
+    await listProperties({
+      limit: 200
+    });
 
-  const result = await pool.query(
-    `INSERT INTO leads_lead(name, phone, budget, desired_location, property_interest, notes, pipeline_stage, assigned_agent_id, alert_enabled, created_at)
-     VALUES($1,$2,$3, ${pointSql('$5', '$4')}, $6, $7, $8, $9, $10, NOW())
-     RETURNING *`,
-    [name, phone, budget, lat, lng, property_interest, notes, pipeline_stage, agentId, Boolean(alert_enabled)]
-  );
-  return result.rows[0];
-}
+  const assigned =
+    properties.filter(
+      (item) =>
+        String(item.agent?.id) ===
+        String(id)
+    );
 
-async function updateLeadStage(id, pipeline_stage) {
-  const result = await pool.query(
-    `UPDATE leads_lead
-     SET pipeline_stage = $2
-     WHERE id = $1
-     RETURNING *`,
-    [id, pipeline_stage]
-  );
-  return result.rows[0] || null;
-}
+  const center =
+    averageCenter(assigned);
 
-async function createAppointment(payload) {
-  const { lead_id, property_id, agent_id = null, scheduled_at, notes = '' } = payload;
-  if (!lead_id || !property_id || !scheduled_at) throw new Error('lead_id, property_id and scheduled_at are required');
-
-  const resolvedLead = await pool.query('SELECT assigned_agent_id FROM leads_lead WHERE id = $1 LIMIT 1', [lead_id]);
-  const resolvedProperty = await pool.query('SELECT agent_id FROM properties_property WHERE id = $1 LIMIT 1', [property_id]);
-  const resolvedAgentId = agent_id || resolvedLead.rows[0]?.assigned_agent_id || resolvedProperty.rows[0]?.agent_id;
-  if (!resolvedAgentId) throw new Error('agent could not be resolved');
-
-  const result = await pool.query(
-    `INSERT INTO leads_appointment(lead_id, property_id, agent_id, scheduled_at, notes)
-     VALUES($1,$2,$3,$4,$5)
-     RETURNING *`,
-    [lead_id, property_id, resolvedAgentId, scheduled_at, notes]
-  );
-  return result.rows[0];
+  return {
+    ...agent,
+    lat: center.lat,
+    lng: center.lng,
+    ...summarizeAgentReviews(id),
+    properties: assigned
+  };
 }
 
 async function getDashboardStats() {
-  const [propertyTotals, propertyTypeStats, leadStats, leadTotal, agents, featured, appointments] = await Promise.all([
+  const [
+    propertyCount,
+    agentCount
+  ] = await Promise.all([
     pool.query(
-      `SELECT
-         COUNT(*)::int AS total,
-         COUNT(*) FILTER (WHERE listing_status = 'active')::int AS active_total,
-         COUNT(*) FILTER (WHERE listing_status = 'pending')::int AS pending_total,
-         COUNT(*) FILTER (WHERE listing_status = 'sold')::int AS sold_total,
-         COUNT(*) FILTER (WHERE listing_status = 'hidden')::int AS hidden_total,
-         COUNT(*) FILTER (WHERE is_featured = true)::int AS featured_total,
-         ROUND(AVG(price)::numeric, 0) AS avg_price,
-         ROUND(AVG(area)::numeric, 1) AS avg_area
-       FROM properties_property`
+      `
+      SELECT COUNT(*)::int AS total
+      FROM properties_property
+      `
     ),
     pool.query(
-      `SELECT property_type,
-              COUNT(*)::int AS count,
-              ROUND(AVG(price)::numeric, 0) AS avg_price,
-              ROUND(AVG(area)::numeric, 1) AS avg_area
-       FROM properties_property
-       GROUP BY property_type
-       ORDER BY property_type ASC`
-    ),
-    pool.query(
-      `SELECT pipeline_stage, COUNT(*)::int AS count
-       FROM leads_lead
-       GROUP BY pipeline_stage
-       ORDER BY pipeline_stage ASC`
-    ),
-    pool.query('SELECT COUNT(*)::int AS count FROM leads_lead'),
-    pool.query('SELECT COUNT(*)::int AS count FROM accounts_agent'),
-    pool.query('SELECT COUNT(*)::int AS count FROM properties_property WHERE is_featured = true'),
-    pool.query('SELECT COUNT(*)::int AS count FROM leads_appointment'),
+      `
+      SELECT COUNT(*)::int AS total
+      FROM accounts_agent
+      `
+    )
   ]);
 
-  return {
-    property_total: propertyTotals.rows[0].total,
-    property_active_total: propertyTotals.rows[0].active_total,
-    property_pending_total: propertyTotals.rows[0].pending_total,
-    property_sold_total: propertyTotals.rows[0].sold_total,
-    property_hidden_total: propertyTotals.rows[0].hidden_total,
-    featured_total: propertyTotals.rows[0].featured_total,
-    avg_price: propertyTotals.rows[0].avg_price,
-    avg_area: propertyTotals.rows[0].avg_area,
-    property_type_stats: propertyTypeStats.rows,
-    lead_stage_stats: leadStats.rows,
-    lead_total: leadTotal.rows[0].count,
-    agent_total: agents.rows[0].count,
-    appointment_total: appointments.rows[0].count,
-    featured_property_total: featured.rows[0].count,
-  };
-}
-
-async function listWishlist(token) {
-  const key = resolveCollectionKey(token);
-  const ids = collectionsStore.list('wishlist', key);
-  if (!ids.length && key === 'guest') {
-    const result = await pool.query(
-      `SELECT ${propertySelect()}
-       FROM properties_property p
-       LEFT JOIN accounts_agent a ON a.id = p.agent_id
-       ORDER BY p.is_featured DESC, p.created_at DESC
-       LIMIT 6`
+  const forms =
+    ensureFormStore();
+  const activeResult =
+    await pool.query(
+      `
+      SELECT
+        COUNT(*) FILTER (WHERE listing_status = 'active')::int AS active_total,
+        COUNT(*) FILTER (WHERE listing_status = 'sold')::int AS sold_total,
+        COUNT(*) FILTER (WHERE is_featured = true)::int AS featured_total
+      FROM properties_property
+      `
     );
-    return result.rows.map(mapProperty);
+  const typeResult =
+    await pool.query(
+      `
+      SELECT
+        property_type,
+        COUNT(*)::int AS count
+      FROM properties_property
+      GROUP BY property_type
+      ORDER BY count DESC, property_type ASC
+      `
+    );
+
+  return {
+    property_total:
+      propertyCount.rows[0]
+      ?.total || 0,
+    agent_total:
+      agentCount.rows[0]
+      ?.total || 0,
+    lead_total:
+      forms.leads.length,
+    appointment_total:
+      forms.appointments.length,
+    property_active_total:
+      activeResult.rows[0]
+      ?.active_total || 0,
+    property_sold_total:
+      activeResult.rows[0]
+      ?.sold_total || 0,
+    featured_total:
+      activeResult.rows[0]
+      ?.featured_total || 0,
+    property_type_stats:
+      typeResult.rows,
+    satisfaction: 96
+  };
+}
+
+async function createLead(
+  payload
+) {
+  const store =
+    ensureFormStore();
+
+  const lead = {
+    id: String(
+      store.nextLeadId++
+    ),
+    ...payload,
+    created_at:
+      new Date()
+      .toISOString(),
+    pipeline_stage:
+      payload.pipeline_stage ||
+      "new"
+  };
+
+  store.leads.unshift(lead);
+  saveFormStore(store);
+
+  return lead;
+}
+
+async function createAppointment(
+  payload
+) {
+  const store =
+    ensureFormStore();
+
+  const appointment = {
+    id: String(
+      store.nextAppointmentId++
+    ),
+    ...payload,
+    created_at:
+      new Date()
+      .toISOString()
+  };
+
+  store.appointments.unshift(
+    appointment
+  );
+  saveFormStore(store);
+
+  return appointment;
+}
+
+async function listLeads() {
+  const store =
+    ensureFormStore();
+
+  return store.leads || [];
+}
+
+async function updateLeadStage(
+  id,
+  pipelineStage
+) {
+  const store =
+    ensureFormStore();
+
+  const lead =
+    store.leads.find(
+      (item) =>
+        String(item.id) ===
+        String(id)
+    );
+
+  if (!lead) {
+    return null;
   }
-  return listPropertiesByIds(ids);
+
+  lead.pipeline_stage =
+    pipelineStage || "new";
+
+  saveFormStore(store);
+
+  return lead;
 }
 
-async function toggleWishlist(token, propertyId) {
-  const key = resolveCollectionKey(token);
-  const id = Number(propertyId);
-  if (!Number.isFinite(id)) throw new Error('propertyId is required');
+async function deleteLead(
+  id
+) {
+  const store =
+    ensureFormStore();
 
-  const current = collectionsStore.list('wishlist', key).map(Number).filter(Number.isFinite);
-  const exists = current.includes(id);
-  const next = exists ? current.filter((item) => item !== id) : [id, ...current];
-  collectionsStore.setList('wishlist', key, next);
+  const next =
+    store.leads.filter(
+      (item) =>
+        String(item.id) !==
+        String(id)
+    );
 
-  return {
-    added: !exists,
-    ids: next,
-    items: await listPropertiesByIds(next),
-  };
-}
-
-async function removeWishlistItem(token, propertyId) {
-  const key = resolveCollectionKey(token);
-  const id = Number(propertyId);
-  const current = collectionsStore.list('wishlist', key).map(Number).filter(Number.isFinite);
-  const next = current.filter((item) => item !== id);
-  collectionsStore.setList('wishlist', key, next);
-  return {
-    removed: current.length !== next.length,
-    ids: next,
-    items: await listPropertiesByIds(next),
-  };
-}
-
-async function listCompare(token) {
-  const key = resolveCollectionKey(token);
-  return listPropertiesByIds(collectionsStore.list('compare', key));
-}
-
-async function toggleCompare(token, propertyId) {
-  const key = resolveCollectionKey(token);
-  const id = Number(propertyId);
-  if (!Number.isFinite(id)) throw new Error('propertyId is required');
-
-  const current = collectionsStore.list('compare', key).map(Number).filter(Number.isFinite);
-  const exists = current.includes(id);
-  let next;
-  if (exists) {
-    next = current.filter((item) => item !== id);
-  } else {
-    if (current.length >= 3) throw new Error('compare limit reached');
-    next = [id, ...current];
+  if (
+    next.length ===
+    store.leads.length
+  ) {
+    return false;
   }
-  collectionsStore.setList('compare', key, next);
+
+  store.leads = next;
+  saveFormStore(store);
+
+  return true;
+}
+
+async function createPasswordResetRequest(
+  payload
+) {
+  const store =
+    ensureFormStore();
+
+  store.passwordResetRequests ||=
+    [];
+
+  const request = {
+    id: String(
+      store.nextPasswordResetRequestId++
+    ),
+    email:
+      String(
+        payload.email || ""
+      ).trim(),
+    created_at:
+      new Date()
+      .toISOString(),
+    status: "pending"
+  };
+
+  store.passwordResetRequests.unshift(
+    request
+  );
+  saveFormStore(store);
+
+  return request;
+}
+
+async function listAgentReviews(
+  agentId
+) {
+  return summarizeAgentReviews(
+    agentId
+  );
+}
+
+async function createAgentReview(
+  token,
+  agentId,
+  payload
+) {
+  const store =
+    ensureFormStore();
+  const currentUser =
+    resolveUserFromToken(
+      token
+    );
+
+  const rating =
+    Math.min(
+      5,
+      Math.max(
+        1,
+        Number(
+          payload.rating || 1
+        )
+      )
+    );
+
+  const authorName =
+    String(
+      payload.author_name ||
+        currentUser?.full_name ||
+        currentUser?.username ||
+        "Khách vãng lai"
+    ).trim();
+  const reviewerKey =
+    currentUser
+      ? `user:${currentUser.id}`
+      : `guest:${authorName.toLowerCase()}`;
+
+  const existingReview =
+    (store.agentReviews || [])
+    .find(
+      (item) =>
+        String(item.agent_id) ===
+          String(agentId) &&
+        item.reviewer_key ===
+          reviewerKey
+    );
+
+  if (existingReview) {
+    existingReview.rating =
+      rating;
+    existingReview.comment =
+      String(
+        payload.comment || ""
+      ).trim();
+    existingReview.author_name =
+      authorName;
+    existingReview.updated_at =
+      new Date()
+      .toISOString();
+
+    saveFormStore(store);
+
+    return summarizeAgentReviews(
+      agentId
+    );
+  }
+
+  const review = {
+    id: String(
+      store.nextAgentReviewId++
+    ),
+    agent_id:
+      String(agentId),
+    reviewer_key:
+      reviewerKey,
+    reviewer_user_id:
+      currentUser?.id || null,
+    rating,
+    comment:
+      String(
+        payload.comment || ""
+      ).trim(),
+    author_name:
+      authorName,
+    created_at:
+      new Date()
+      .toISOString()
+  };
+
+  store.agentReviews.unshift(
+    review
+  );
+  saveFormStore(store);
+
+  return summarizeAgentReviews(
+    agentId
+  );
+}
+
+async function listCollectionProperties(
+  storeName,
+  token
+) {
+  const ids =
+    collectionsStore.list(
+      storeName,
+      resolveCollectionKey(
+        token
+      )
+    );
+
+  if (!ids.length) {
+    return [];
+  }
+
+  const items =
+    await Promise.all(
+      ids.map((id) =>
+        getPropertyById(id)
+      )
+    );
+
+  return items.filter(Boolean);
+}
+
+async function listWishlist(
+  token
+) {
+  return listCollectionProperties(
+    "wishlist",
+    token
+  );
+}
+
+async function toggleWishlist(
+  token,
+  propertyId
+) {
+  const key =
+    resolveCollectionKey(
+      token
+    );
+
+  const current =
+    collectionsStore.list(
+      "wishlist",
+      key
+    );
+
+  const next =
+    current.includes(
+      String(propertyId)
+    )
+      ? current.filter(
+          (id) =>
+            String(id) !==
+            String(propertyId)
+        )
+      : [
+          ...current,
+          String(propertyId)
+        ];
+
+  collectionsStore.setList(
+    "wishlist",
+    key,
+    next
+  );
+
   return {
-    added: !exists,
-    ids: next,
-    items: await listPropertiesByIds(next),
+    ids: next
   };
 }
 
-async function removeCompareItem(token, propertyId) {
-  const key = resolveCollectionKey(token);
-  const id = Number(propertyId);
-  const current = collectionsStore.list('compare', key).map(Number).filter(Number.isFinite);
-  const next = current.filter((item) => item !== id);
-  collectionsStore.setList('compare', key, next);
+async function removeWishlistItem(
+  token,
+  propertyId
+) {
+  const key =
+    resolveCollectionKey(
+      token
+    );
+
+  const next =
+    collectionsStore
+    .list(
+      "wishlist",
+      key
+    )
+    .filter(
+      (id) =>
+        String(id) !==
+        String(propertyId)
+    );
+
+  collectionsStore.setList(
+    "wishlist",
+    key,
+    next
+  );
+
   return {
-    removed: current.length !== next.length,
-    ids: next,
-    items: await listPropertiesByIds(next),
+    ids: next
   };
 }
 
-async function listSavedSearches(token) {
-  const key = resolveCollectionKey(token);
-  const store = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'data', 'collections.json'), 'utf8'));
-  return store.savedSearches?.[key] || [];
+async function listCompare(
+  token
+) {
+  return listCollectionProperties(
+    "compare",
+    token
+  );
 }
 
-async function saveSearch(token, payload) {
-  const key = resolveCollectionKey(token);
-  if (!payload || typeof payload !== 'object') throw new Error('payload is required');
-  return collectionsStore.upsertSavedSearch(key, payload);
+async function toggleCompare(
+  token,
+  propertyId
+) {
+  const key =
+    resolveCollectionKey(
+      token
+    );
+
+  const current =
+    collectionsStore.list(
+      "compare",
+      key
+    );
+
+  const next =
+    current.includes(
+      String(propertyId)
+    )
+      ? current.filter(
+          (id) =>
+            String(id) !==
+            String(propertyId)
+        )
+      : [
+          ...current,
+          String(propertyId)
+        ].slice(-3);
+
+  collectionsStore.setList(
+    "compare",
+    key,
+    next
+  );
+
+  return {
+    ids: next
+  };
 }
 
-async function deleteSavedSearch(token, id) {
-  const key = resolveCollectionKey(token);
-  return collectionsStore.deleteSavedSearch(key, id);
+async function removeCompareItem(
+  token,
+  propertyId
+) {
+  const key =
+    resolveCollectionKey(
+      token
+    );
+
+  const next =
+    collectionsStore
+    .list(
+      "compare",
+      key
+    )
+    .filter(
+      (id) =>
+        String(id) !==
+        String(propertyId)
+    );
+
+  collectionsStore.setList(
+    "compare",
+    key,
+    next
+  );
+
+  return {
+    ids: next
+  };
 }
 
-async function login(payload) {
-  const { username, password = '' } = payload;
-  const session = authStore.authenticate(username, password);
-  if (!session) return null;
-  return session;
+async function listSavedSearches(
+  token
+) {
+  return collectionsStore.list(
+    "savedSearches",
+    resolveCollectionKey(token)
+  );
 }
 
-async function register(payload) {
-  return authStore.createUser(payload);
+async function saveSearch(
+  token,
+  payload
+) {
+  return collectionsStore.upsertSavedSearch(
+    resolveCollectionKey(
+      token
+    ),
+    payload
+  );
 }
 
-async function getCurrentUser(token) {
-  return authStore.verifyToken(token);
+async function deleteSavedSearch(
+  token,
+  searchId
+) {
+  return {
+    ok:
+      collectionsStore.deleteSavedSearch(
+        resolveCollectionKey(
+          token
+        ),
+        searchId
+      )
+  };
 }
 
-async function updateProfile(token, payload) {
-  const current = authStore.verifyToken(token);
-  if (!current) return null;
-  return authStore.updateUser(current.id, payload);
+async function login(
+  payload
+) {
+  return authStore.authenticate(
+    payload.username,
+    payload.password
+  );
+}
+
+async function register(
+  payload
+) {
+  return authStore.createUser(
+    payload
+  );
+}
+
+async function getCurrentUser(
+  token
+) {
+  return authStore.verifyToken(
+    token
+  );
+}
+
+async function updateProfile(
+  token,
+  payload
+) {
+  const current =
+    authStore.verifyToken(
+      token
+    );
+
+  if (!current) {
+    return null;
+  }
+
+  return authStore.updateUser(
+    current.id,
+    payload
+  );
 }
 
 async function listTasks() {
-  const result = await pool.query('SELECT * FROM tasks ORDER BY id ASC');
-  return result.rows;
-}
-
-async function createTask(title) {
-  const result = await pool.query('INSERT INTO tasks(title) VALUES($1) RETURNING *', [title]);
-  return result.rows[0];
-}
-
-async function deleteTask(id) {
-  await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
-}
-
-function parseCSV(text) {
-  const lines = String(text || '').split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) return [];
-  const splitLine = (line) => line.split(',').map((value) => value.trim().replace(/^"|"$/g, ''));
-  const headers = splitLine(lines[0]);
-  return lines.slice(1).map((line) => {
-    const values = splitLine(line);
-    return headers.reduce((row, header, index) => {
-      row[header] = values[index] ?? '';
-      return row;
-    }, {});
-  });
-}
-
-function sanitizePropertyCSV(row) {
-  const obj = {};
-  Object.keys(row).forEach((k) => {
-    const key = k.trim().toLowerCase();
-    let val = row[k];
-    if (typeof val === 'string') val = val.trim();
-    if (val === '' || val === 'null' || val === 'undefined') val = null;
-    if (['price', 'area', 'bedrooms', 'bathrooms', 'floors', 'year_built', 'lat', 'lng', 'agent_id'].includes(key)) {
-      val = val !== null ? Number(val) : null;
-    }
-    obj[key] = val;
-  });
-  return obj;
-}
-
-async function importPropertiesCSV(text) {
-  const rows = parseCSV(text);
-  if (!rows.length) throw new Error('CSV rỗng');
-  const list = [];
-
-  for (const row of rows) {
-    const obj = sanitizePropertyCSV(row);
-    if (!obj.title || !obj.address || !obj.price) throw new Error('Missing required fields: title, address, price');
-
-    const result = await pool.query(
-      `INSERT INTO properties_property
-       (title, slug, description, address, price, area, type, status, lat, lng, bedrooms, bathrooms, floors, year_built, is_featured, agent_id, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
-       RETURNING id`,
-      [
-        obj.title,
-        (obj.slug || obj.title).toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'),
-        obj.description || '',
-        obj.address,
-        obj.price,
-        obj.area,
-        obj.type || 'house',
-        obj.status || 'sale',
-        obj.lat || DEFAULT_LAT,
-        obj.lng || DEFAULT_LNG,
-        obj.bedrooms || 0,
-        obj.bathrooms || 0,
-        obj.floors || 0,
-        obj.year_built || 2020,
-        obj.is_featured ? true : false,
-        obj.agent_id || null,
-      ]
+  const result =
+    await pool.query(
+      `
+      SELECT *
+      FROM tasks
+      ORDER BY id ASC
+      `
     );
-    list.push(result.rows[0]);
-  }
 
-  return list;
-}
-
-async function logPropertyChange(propertyId, field, oldValue, newValue, actorId, actorName) {
-  if (!field || !actorId) return null;
-  const result = await pool.query(
-    `INSERT INTO properties_property_changelog
-     (property_id, field, old_value, new_value, actor_id, actor_name, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW())
-     RETURNING *`,
-    [propertyId, field, oldValue, newValue, actorId, actorName]
-  );
-  return result.rows[0];
-}
-
-async function getPropertyChangelog(propertyId) {
-  const result = await pool.query(
-    `SELECT c.*, u.full_name as actor_full_name, u.email as actor_email
-     FROM properties_property_changelog c
-     LEFT JOIN accounts_user u ON u.id = c.actor_id
-     WHERE c.property_id = $1
-     ORDER BY c.created_at DESC
-     LIMIT 50`,
-    [propertyId]
-  );
   return result.rows;
 }
 
-async function clearPropertyChangelog(propertyId) {
-  const result = await pool.query(
-    `DELETE FROM properties_property_changelog WHERE property_id = $1`,
-    [propertyId]
-  );
-  return { deleted: result.rowCount || 0 };
+async function createTask(
+  title
+) {
+  const result =
+    await pool.query(
+      `
+      INSERT INTO tasks
+      (title)
+      VALUES($1)
+      RETURNING *
+      `,
+      [title]
+    );
+
+  return result.rows[0];
 }
 
-module.exports = {
+async function deleteTask(
+  id
+) {
+  await pool.query(
+    `
+    DELETE
+    FROM tasks
+    WHERE id=$1
+    `,
+    [id]
+  );
+}
+
+export default {
   listProperties,
+  listPropertiesPage,
   listMapData,
+  listNearbyProperties,
   getPropertyById,
   createProperty,
   updateProperty,
   updatePropertyStage,
   deleteProperty,
-  listAmenities,
-  listNearbyProperties,
-  listNearbyAmenities,
   listPropertyImages,
   createPropertyImage,
   setPrimaryImage,
   deletePropertyImage,
   reorderPropertyImage,
+  listAmenities,
+  createAmenity,
+  updateAmenity,
+  deleteAmenity,
+  listNearbyAmenities,
   listAgents,
   getAgentById,
-  createLead,
-  updateLeadStage,
-  createAppointment,
   getDashboardStats,
+  createLead,
+  createAppointment,
+  listLeads,
+  updateLeadStage,
+  deleteLead,
+  createPasswordResetRequest,
+  listAgentReviews,
+  createAgentReview,
   listWishlist,
   toggleWishlist,
   removeWishlistItem,
@@ -896,9 +2446,5 @@ module.exports = {
   updateProfile,
   listTasks,
   createTask,
-  deleteTask,
-  importPropertiesCSV,
-  logPropertyChange,
-  getPropertyChangelog,
-  clearPropertyChangelog,
+  deleteTask
 };
