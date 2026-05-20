@@ -80,6 +80,7 @@ async function fileToDataUrl(file) {
 export const api = {
   health: () => unwrap(client.get("/health"), { ok: false }),
   properties: (params) => unwrap(client.get("/properties", { params }), []),
+  propertiesPage: (params) => unwrap(client.get("/properties", { params: { ...params, paginated: true } }), { items: [], pagination: null }),
   mapData: (params) => unwrap(client.get("/properties/map-data", { params }), { items: [], center: { lat: 10.7769, lng: 106.7009 } }),
   nearbyProperties: (params) => unwrap(client.get("/properties/nearby/search", { params }), { items: [], center: { lat: 10.7769, lng: 106.7009 }, radiusKm: 5 }),
   property: (id) => unwrap(client.get(`/properties/${id}`), null),
@@ -100,9 +101,14 @@ export const api = {
   reorderPropertyImage: (imageId, payload) => unwrap(client.post(`/properties/images/${imageId}/reorder`, payload), null),
   deletePropertyImage: (imageId) => unwrap(client.delete(`/properties/images/${imageId}`), { ok: false }),
   amenities: (params) => unwrap(client.get("/amenities", { params }), []),
+  createAmenity: (payload) => unwrap(client.post("/amenities", payload), null),
+  updateAmenity: (id, payload) => unwrap(client.put(`/amenities/${id}`, payload), null),
+  deleteAmenity: (id) => unwrap(client.delete(`/amenities/${id}`), { ok: false }),
   nearbyAmenities: (params) => unwrap(client.get("/amenities/nearby", { params }), { items: [], center: { lat: 10.7769, lng: 106.7009 }, radiusKm: 3 }),
   agents: () => unwrap(client.get("/agents"), []),
   agent: (id) => unwrap(client.get(`/agents/${id}`), null),
+  agentReviews: (id) => unwrap(client.get(`/agents/${id}/reviews`), { rating: 5, rating_count: 0, reviews: [] }),
+  createAgentReview: (id, payload) => unwrap(client.post(`/agents/${id}/reviews`, payload), null),
   wishlist: () => unwrap(client.get("/wishlist"), []),
   toggleWishlist: (propertyId) => unwrap(client.post(`/wishlist/${propertyId}/toggle`), null),
   removeWishlist: (propertyId) => unwrap(client.delete(`/wishlist/${propertyId}`), null),
@@ -112,10 +118,13 @@ export const api = {
   savedSearches: () => unwrap(client.get("/saved-searches"), []),
   createSavedSearch: (payload) => unwrap(client.post("/saved-searches", payload), null),
   deleteSavedSearch: (searchId) => unwrap(client.delete(`/saved-searches/${searchId}`), null),
+  route: (params) => unwrap(client.get("/route", { params }), null),
   dashboard: () => unwrap(client.get("/dashboard"), null),
   createLead: (payload) => unwrap(client.post("/leads", payload), null),
   updateLeadStage: (id, payload) => unwrap(client.patch(`/leads/${id}/stage`, payload), null),
   createAppointment: (payload) => unwrap(client.post("/appointments", payload), null),
+  leads: () => unwrap(client.get("/leads"), []),
+  deleteLead: (id) => unwrap(client.delete(`/leads/${id}`), { ok: false }),
   login: async (payload) => {
     const result = await unwrap(client.post("/auth/login", payload), null);
     if (result?.token) setToken(result.token);
@@ -128,6 +137,7 @@ export const api = {
   },
   me: () => unwrap(client.get("/auth/me"), null),
   updateProfile: (payload) => unwrap(client.put("/auth/profile", payload), null),
+  passwordResetRequest: (payload) => unwrap(client.post("/auth/password-reset-request", payload), { ok: false }),
   logout: () => setToken(null),
   getToken: () => getToken(),
 };

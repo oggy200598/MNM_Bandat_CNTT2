@@ -1,119 +1,400 @@
-import { useEffect, useState } from "react";
-import About from "./pages/About";
 import {
-  AdminConsolePage,
-  AdminDashboardPage,
-  AgentProfilePage,
-  AppointmentCreatePage,
-  CustomerDashboardPage,
-  DashboardPage,
-  ErrorPage,
-  ImagesManagePage,
-  LeadFormPage,
-  LoginPage,
-  PasswordResetPage,
-  ProfilePage,
-  PropertyDetailPage,
-  PropertyFormPage,
-  RegisterPage,
-  WishlistPage,
-} from "./pages/ExtraPages";
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
+
+/* ======================
+   PUBLIC PAGES
+====================== */
+
 import Home from "./pages/Home";
+import About from "./pages/About";
+
 import {
   AmenitySearchPage,
   ComparePage,
   NearbySearchPage,
-  PropertyListPage,
+  PropertyListPage
 } from "./pages/PropertyPages";
 
-const INTERNAL_ROUTES = [
-  "/",
-  "/about",
-  "/properties",
-  "/nearby",
-  "/amenities",
-  "/compare",
-  "/property-detail",
-  "/properties/create",
-  "/properties/edit",
-  "/properties/images",
-  "/profile",
-  "/agent-profile",
-  "/appointments/create",
-  "/login",
-  "/register",
-  "/password-reset",
-  "/wishlist",
-  "/lead-form",
-  "/dashboard",
-  "/customer-dashboard",
-  "/admin-dashboard",
-  "/admin-console",
-  "/403",
-  "/404",
-];
+import PropertyDetailPage
+  from "./pages/property/PropertyDetailPage";
 
-function getRoute() {
-  return window.location.pathname.toLowerCase();
+/* ======================
+   AUTH PAGES
+====================== */
+
+import LoginPage
+  from "./pages/auth/LoginPage";
+
+import RegisterPage
+  from "./pages/auth/RegisterPage";
+
+import PasswordResetPage
+  from "./pages/auth/PasswordResetPage";
+
+/* ======================
+   USER PAGES
+====================== */
+
+import WishlistPage
+  from "./pages/property/WishlistPage";
+
+import DashboardPage
+  from "./pages/dashboard/DashboardPage";
+
+import CustomerDashboardPage
+  from "./pages/dashboard/CustomerDashboardPage";
+
+import ProfilePage
+  from "./pages/profile/ProfilePage";
+
+import AgentProfilePage
+  from "./pages/profile/AgentProfilePage";
+
+import LeadFormPage
+  from "./pages/lead/LeadFormPage";
+
+import AppointmentCreatePage
+  from "./pages/lead/AppointmentCreatePage";
+
+/* ======================
+   PROPERTY MANAGEMENT
+====================== */
+
+import PropertyFormPage
+  from "./pages/property/PropertyFormPage";
+
+import ImagesManagePage
+  from "./pages/admin/ImagesManagePage";
+
+/* ======================
+   ADMIN PAGES
+====================== */
+
+import AdminDashboardPage
+  from "./pages/admin/AdminDashboardPage";
+
+import AdminConsolePage
+  from "./pages/admin/AdminConsolePage";
+
+/* ======================
+   SYSTEM
+====================== */
+
+import ErrorPage
+  from "./pages/system/ErrorPage";
+
+/* ======================
+   PROTECTED ROUTE
+====================== */
+
+function ProtectedRoute({
+  children,
+  allowedRoles = []
+}) {
+
+  const user = JSON.parse(
+    localStorage.getItem("user")
+  );
+
+  // chưa login
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  // sai quyền
+  if (
+    allowedRoles.length > 0 &&
+    !allowedRoles.includes(user.role)
+  ) {
+    return <Navigate to="/403" />;
+  }
+
+  return children;
 }
 
-function App() {
-  const [route, setRoute] = useState(getRoute);
+/* ======================
+   APP
+====================== */
 
-  useEffect(() => {
-    const handleRouteChange = () => setRoute(getRoute());
+export default function App() {
 
-    window.addEventListener("popstate", handleRouteChange);
+  return (
+    <BrowserRouter>
 
-    const handleClick = (event) => {
-      const link = event.target.closest("a[href]");
-      if (!link) return;
+      <Routes>
 
-      const url = new URL(link.href);
-      const isSameOrigin = url.origin === window.location.origin;
-      const isInternalRoute = isSameOrigin && INTERNAL_ROUTES.includes(url.pathname);
+        {/* ======================
+            PUBLIC ROUTES
+        ====================== */}
 
-      if (!isInternalRoute || link.hash) return;
+        <Route
+          path="/"
+          element={<Home />}
+        />
 
-      event.preventDefault();
-      window.history.pushState({}, "", url.pathname);
-      handleRouteChange();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    };
+        <Route
+          path="/about"
+          element={<About />}
+        />
 
-    document.addEventListener("click", handleClick);
+        <Route
+          path="/properties"
+          element={<PropertyListPage />}
+        />
 
-    return () => {
-      window.removeEventListener("popstate", handleRouteChange);
-      document.removeEventListener("click", handleClick);
-    };
-  }, []);
+        <Route
+          path="/property-detail/:id"
+          element={<PropertyDetailPage />}
+        />
 
-  if (route === "/about") return <About />;
-  if (route === "/properties") return <PropertyListPage />;
-  if (route === "/nearby") return <NearbySearchPage />;
-  if (route === "/amenities") return <AmenitySearchPage />;
-  if (route === "/compare") return <ComparePage />;
-  if (route === "/property-detail") return <PropertyDetailPage />;
-  if (route === "/properties/create") return <PropertyFormPage />;
-  if (route === "/properties/edit") return <PropertyFormPage edit />;
-  if (route === "/properties/images") return <ImagesManagePage />;
-  if (route === "/profile") return <ProfilePage />;
-  if (route === "/agent-profile") return <AgentProfilePage />;
-  if (route === "/appointments/create") return <AppointmentCreatePage />;
-  if (route === "/login") return <LoginPage />;
-  if (route === "/register") return <RegisterPage />;
-  if (route === "/password-reset") return <PasswordResetPage />;
-  if (route === "/wishlist") return <WishlistPage />;
-  if (route === "/lead-form") return <LeadFormPage />;
-  if (route === "/dashboard") return <DashboardPage />;
-  if (route === "/customer-dashboard") return <CustomerDashboardPage />;
-  if (route === "/admin-dashboard") return <AdminDashboardPage />;
-  if (route === "/admin-console") return <AdminConsolePage />;
-  if (route === "/403") return <ErrorPage code="403" />;
-  if (route === "/404") return <ErrorPage code="404" />;
+        <Route
+          path="/nearby"
+          element={<NearbySearchPage />}
+        />
 
-  return <Home />;
+        <Route
+          path="/amenities"
+          element={<AmenitySearchPage />}
+        />
+
+        <Route
+          path="/compare"
+          element={<ComparePage />}
+        />
+
+        {/* ======================
+            AUTH ROUTES
+        ====================== */}
+
+        <Route
+          path="/login"
+          element={<LoginPage />}
+        />
+
+        <Route
+          path="/register"
+          element={<RegisterPage />}
+        />
+
+        <Route
+          path="/password-reset"
+          element={<PasswordResetPage />}
+        />
+
+        {/* ======================
+            USER ROUTES
+        ====================== */}
+
+        <Route
+          path="/wishlist"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "agent",
+                "admin"
+              ]}
+            >
+              <WishlistPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "agent",
+                "admin"
+              ]}
+            >
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/agent-profile/:id"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "agent",
+                "admin"
+              ]}
+            >
+              <AgentProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/customer-dashboard"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "admin"
+              ]}
+            >
+              <CustomerDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lead-form"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "admin"
+              ]}
+            >
+              <LeadFormPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/appointments/create"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "customer",
+                "user",
+                "admin"
+              ]}
+            >
+              <AppointmentCreatePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ======================
+            PROPERTY MANAGEMENT
+        ====================== */}
+
+        <Route
+          path="/properties/create"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <PropertyFormPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/properties/edit/:id"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <PropertyFormPage edit />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/properties/images/:id"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "agent",
+                "admin"
+              ]}
+            >
+              <ImagesManagePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ======================
+            ADMIN ROUTES
+        ====================== */}
+
+        <Route
+          path="/admin-dashboard"
+          element={
+            <ProtectedRoute
+              allowedRoles={["admin"]}
+            >
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin-console/*"
+          element={
+            <ProtectedRoute
+              allowedRoles={["admin"]}
+            >
+              <AdminConsolePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ======================
+            ERROR ROUTES
+        ====================== */}
+
+        <Route
+          path="/403"
+          element={
+            <ErrorPage code="403" />
+          }
+        />
+
+        <Route
+          path="/404"
+          element={
+            <ErrorPage code="404" />
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            <ErrorPage code="404" />
+          }
+        />
+
+      </Routes>
+
+    </BrowserRouter>
+  );
 }
-
-export default App;

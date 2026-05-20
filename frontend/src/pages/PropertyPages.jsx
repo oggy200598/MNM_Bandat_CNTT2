@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, normalizeProperty } from "../api";
-import "./PropertyPages.css";
+import "../App.css";
 
 const fallbackProperties = [
   {
@@ -9,7 +9,7 @@ const fallbackProperties = [
     price: "12 tỷ",
     address: "Nguyễn Huệ, Quận 1, TP.HCM",
     area: 120,
-    type: "Căn hộ",
+    type: "apartment",
     status: "Đang bán",
     agent: "Nguyễn Văn A",
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200&auto=format&fit=crop",
@@ -21,7 +21,7 @@ const fallbackProperties = [
     price: "25 tỷ",
     address: "Thảo Điền, TP.Thủ Đức",
     area: 250,
-    type: "Nhà phố",
+    type: "house",
     status: "Nổi bật",
     agent: "Trần Thị B",
     image: "https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=1200&auto=format&fit=crop",
@@ -33,7 +33,7 @@ const fallbackProperties = [
     price: "5 tỷ",
     address: "Bình Chánh, TP.HCM",
     area: 500,
-    type: "Đất nền",
+    type: "land",
     status: "Mới",
     agent: "Lê Văn C",
     image: "https://images.unsplash.com/photo-1448630360428-65456885c650?q=80&w=1200&auto=format&fit=crop",
@@ -170,7 +170,7 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
 }
 
 
-function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlistActive, onCompare, compareActive }) {
+function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlistActive }) {
   const p = normalizeProperty(property);
   return (
     <article className="listing-card">
@@ -188,12 +188,52 @@ function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlis
           <span><strong>{p.agentName}</strong></span>
         </div>
         <div className="listing-actions">
-          <a className="btn-geo-primary" href={`/property-detail?id=${p.id}`}>Chi tiết</a>
-          <a className="btn-geo-secondary" href="/compare">So sánh</a>
-          {onWishlist && <button type="button" className="btn-geo-secondary" onClick={() => onWishlist(property)}>{wishlistActive ? 'Bỏ lưu' : 'Lưu tin'}</button>}
-          {onCompare && <button type="button" className="btn-geo-secondary" onClick={() => onCompare(property)}>{compareActive ? 'Bỏ so sánh' : 'So sánh'}</button>}
-          {onDelete && <button type="button" className="btn-geo-secondary danger-btn" onClick={() => onDelete(property)}>Xóa</button>}
-        </div>
+
+  <a
+    className="btn-geo-primary"
+      href={`/property-detail/${p.id}`}  >
+    Chi tiết
+  </a>
+
+  <a
+    className="btn-geo-secondary"
+    href="/compare"
+  >
+    So sánh
+  </a>
+
+  {onWishlist && (
+  <button
+    type="button"
+    className="btn-geo-secondary"
+    onClick={() => {
+
+      if (!wishlistActive) {
+        window.location.href = "/wishlist";
+      }
+
+      onWishlist(property);
+
+    }}
+  >
+    {wishlistActive
+      ? "Bỏ lưu"
+      : "Lưu tin"}
+  </button>
+)}
+
+
+  {onDelete && (
+    <button
+      type="button"
+      className="btn-geo-secondary danger-btn"
+      onClick={() => onDelete(property)}
+    >
+      Xóa
+    </button>
+  )}
+
+</div>
       </div>
     </article>
   );
@@ -266,6 +306,52 @@ function FilterPanel({ filters, onChange, onSubmit, onReset }) {
   );
 }
 
+function PaginationControls({ pagination, onPageChange, loading }) {
+  if (!pagination || pagination.totalPages <= 1) return null;
+
+  const currentPage = pagination.page || 1;
+  const totalPages = pagination.totalPages || 1;
+  const pages = [];
+  const start = Math.max(1, currentPage - 2);
+  const end = Math.min(totalPages, currentPage + 2);
+
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page);
+  }
+
+  return (
+    <nav className="pagination-bar" aria-label="Phan trang bat dong san">
+      <button type="button" className="btn-geo-secondary" onClick={() => onPageChange(currentPage - 1)} disabled={!pagination.hasPrev || loading}>
+        Trước
+      </button>
+      {start > 1 && (
+        <>
+          <button type="button" className={`page-chip ${currentPage === 1 ? "active" : ""}`} onClick={() => onPageChange(1)} disabled={loading}>
+            1
+          </button>
+          {start > 2 && <span className="pagination-ellipsis">...</span>}
+        </>
+      )}
+      {pages.map((page) => (
+        <button key={page} type="button" className={`page-chip ${currentPage === page ? "active" : ""}`} onClick={() => onPageChange(page)} disabled={loading}>
+          {page}
+        </button>
+      ))}
+      {end < totalPages && (
+        <>
+          {end < totalPages - 1 && <span className="pagination-ellipsis">...</span>}
+          <button type="button" className={`page-chip ${currentPage === totalPages ? "active" : ""}`} onClick={() => onPageChange(totalPages)} disabled={loading}>
+            {totalPages}
+          </button>
+        </>
+      )}
+      <button type="button" className="btn-geo-secondary" onClick={() => onPageChange(currentPage + 1)} disabled={!pagination.hasNext || loading}>
+        Sau
+      </button>
+    </nav>
+  );
+}
+
 export function PropertyListPage() {
   const [items, setItems] = useState(fallbackProperties);
   const [mapData, setMapData] = useState({ items: [], center: { lat: 10.7769, lng: 106.7009 } });
@@ -275,6 +361,7 @@ export function PropertyListPage() {
   const [savedSearches, setSavedSearches] = useState([]);
   const [heatMode, setHeatMode] = useState(false);
   const [bbox, setBbox] = useState('');
+  const [pagination, setPagination] = useState({ page: 1, limit: 12, totalItems: fallbackProperties.length, totalPages: 1, hasPrev: false, hasNext: false });
   const [filters, setFilters] = useState({ type: "", status: "", q: "", priceMin: "", priceMax: "", areaMin: "", areaMax: "", sort: "newest" });
 
   const syncCollections = async () => {
@@ -289,8 +376,13 @@ export function PropertyListPage() {
     setSavedSearches(Array.isArray(searches) ? searches : []);
   };
 
-  const loadItems = async (nextFilters = filters, nextBbox = bbox) => {
+  const loadItems = async (
+    nextFilters = filters,
+    nextBbox = bbox,
+    nextPage = pagination.page || 1
+  ) => {
     setLoading(true);
+
     const query = {
       type: nextFilters.type || undefined,
       status: nextFilters.status || undefined,
@@ -299,31 +391,79 @@ export function PropertyListPage() {
       priceMax: nextFilters.priceMax || undefined,
       areaMin: nextFilters.areaMin || undefined,
       areaMax: nextFilters.areaMax || undefined,
-      sort: nextFilters.sort || 'newest',
+      sort: nextFilters.sort || "newest",
       bbox: nextBbox || undefined,
-      limit: 50,
+      page: nextPage,
+      limit: 12,
     };
-    const [properties, map] = await Promise.all([
-      api.properties(query),
-      api.mapData({ ...query, limit: 200 }),
+
+    const [propertyPage, map] = await Promise.all([
+      api.propertiesPage(query),
+      api.mapData({
+        ...query,
+        limit: 200,
+      }),
     ]);
-    if (Array.isArray(properties) && properties.length) setItems(properties);
-    if (map) setMapData(map);
+
+    if (propertyPage && Array.isArray(propertyPage.items)) {
+      setItems(propertyPage.items);
+      setPagination(
+        propertyPage.pagination || {
+          page: 1,
+          limit: query.limit,
+          totalItems: propertyPage.items.length,
+          totalPages: 1,
+          hasPrev: false,
+          hasNext: false,
+        }
+      );
+    } else {
+      setItems(fallbackProperties);
+      setPagination({
+        page: 1,
+        limit: fallbackProperties.length,
+        totalItems: fallbackProperties.length,
+        totalPages: 1,
+        hasPrev: false,
+        hasNext: false,
+      });
+    }
+
+    if (map) {
+      setMapData(map);
+    }
+
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadItems();
-    syncCollections();
-  }, []);
+useEffect(() => {
 
-  const handleChange = (field, value) => setFilters((prev) => ({ ...prev, [field]: value }));
-  const handleSubmit = (event) => { event.preventDefault(); loadItems(filters); };
+  const init = async () => {
+
+    await loadItems();
+
+    await syncCollections();
+
+  };
+
+  init();
+
+}, []);
+
+  const handleChange = (field, value) => {
+    const updated = {
+      ...filters,
+      [field]: value,
+    };
+
+    setFilters(updated);
+  };
+  const handleSubmit = (event) => { event.preventDefault(); loadItems(filters, bbox, 1); };
   const handleReset = () => {
     const cleared = { type: "", status: "", q: "", priceMin: "", priceMax: "", areaMin: "", areaMax: "", sort: "newest" };
     setFilters(cleared);
     setBbox('');
-    loadItems(cleared, '');
+    loadItems(cleared, '', 1);
   };
   const handleDelete = async (property) => {
     if (!window.confirm(`Xóa tin "${property.title}"?`)) return;
@@ -361,7 +501,7 @@ export function PropertyListPage() {
                 <p>{mapData.items.length} tin trên bản đồ · tâm {mapData.center.lat.toFixed(4)}, {mapData.center.lng.toFixed(4)}{bbox ? ` · bbox: ${bbox}` : ''}</p>
               </div>
               <div className="map-card-actions">
-                <button type="button" onClick={() => loadItems(filters, bbox)}>Quét lại</button>
+                <button type="button" onClick={() => loadItems(filters, bbox, pagination.page)}>Quét lại</button>
                 <button type="button" onClick={() => setHeatMode((prev) => !prev)}>{heatMode ? 'Tắt nhiệt' : 'Bản đồ nhiệt'}</button>
                 <button type="button" onClick={handleReset}>Reset bản đồ</button>
               </div>
@@ -374,18 +514,29 @@ export function PropertyListPage() {
               onBoundsChange={(nextBbox) => {
                 if (!nextBbox || nextBbox === bbox) return;
                 setBbox(nextBbox);
-                loadItems(filters, nextBbox);
+                loadItems(filters, nextBbox, 1);
               }}
             />
           </section>
 
           <div className="results-topbar">
             <div>
-              <span className="results-num">{items.length}</span>
+              <span className="results-num">{pagination.totalItems}</span>
               <span className="results-label"> bất động sản phù hợp</span>
               {loading && <span className="results-label"> · đang tải</span>}
             </div>
-            <select className="sort-select" value={filters.sort} onChange={(e) => handleChange('sort', e.target.value)}>
+            <select
+  className="sort-select"
+  value={filters.sort}
+  onChange={(e) => {
+    const nextFilters = {
+      ...filters,
+      sort: e.target.value,
+    };
+    setFilters(nextFilters);
+    loadItems(nextFilters, bbox, 1);
+  }}
+>
               <option value="newest">Mới nhất</option>
               <option value="price_asc">Giá tăng dần</option>
               <option value="price_desc">Giá giảm dần</option>
@@ -397,6 +548,11 @@ export function PropertyListPage() {
 
           <div className="property-card-list">
             {items.map((property) => <PropertyCard property={property} key={property.id} onDelete={handleDelete} onWishlist={toggleWishlist} wishlistActive={wishlistIds.includes(property.id)} onCompare={toggleCompare} compareActive={compareIds.includes(property.id)} />)}
+          </div>
+          {!items.length && !loading && <div className="empty-state-panel">Không có bất động sản phù hợp với bộ lọc hiện tại.</div>}
+          <div className="results-footer">
+            <div className="results-label">Trang {pagination.page} / {pagination.totalPages} · {pagination.limit} tin mỗi trang</div>
+            <PaginationControls pagination={pagination} loading={loading} onPageChange={(page) => loadItems(filters, bbox, page)} />
           </div>
         </main>
       </div>
@@ -417,9 +573,17 @@ export function NearbySearchPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    search();
-  }, []);
+useEffect(() => {
+
+  const init = async () => {
+
+    await search();
+
+  };
+
+  init();
+
+}, []);
 
   return (
     <div className="property-page">
@@ -473,9 +637,17 @@ export function AmenitySearchPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    search();
-  }, []);
+useEffect(() => {
+
+  const init = async () => {
+
+    await search();
+
+  };
+
+  init();
+
+}, []);
 
   return (
     <div className="property-page">
@@ -521,9 +693,17 @@ export function ComparePage() {
     if (Array.isArray(data) && data.length) setCompareItems(data.slice(0, 3));
   };
 
-  useEffect(() => {
-    refresh();
-  }, []);
+useEffect(() => {
+
+  const init = async () => {
+
+    await refresh();
+
+  };
+
+  init();
+
+}, []);
 
   return (
     <div className="property-page">
@@ -560,7 +740,33 @@ export function ComparePage() {
                     <span>👤 {p.agentName}</span>
                     <span>📍 {property.address}</span>
                   </div>
-                  <div className="listing-actions"><button type="button" className="btn-geo-secondary danger-btn" onClick={async () => { await api.removeCompare(property.id); refresh(); }}>Bỏ so sánh</button></div>
+                 <div className="listing-actions">
+
+  <button
+    type="button"
+    className="btn-geo-secondary danger-btn"
+    onClick={() => {
+
+      const confirmDelete = window.confirm(
+        "Bạn có muốn bỏ bất động sản này khỏi danh sách so sánh không?"
+      );
+
+      if (!confirmDelete) return;
+
+      setCompareItems((prev) =>
+        prev.filter(
+          (item) => item.id !== property.id
+        )
+      );
+
+      api.removeCompare(property.id);
+
+    }}
+  >
+    Bỏ so sánh
+  </button>
+
+</div>
                 </div>
               </article>
             );

@@ -1,18 +1,40 @@
 /* eslint-disable react-refresh/only-export-components */
-import { StrictMode, useEffect } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 
 
 import "./index.css";
 import App from "./App.jsx";
+import { api } from "./api.js";
 
 
 /* ═══════════════════════════════════════
    LAYOUT
 ═══════════════════════════════════════ */
 function Layout({ children }) {
+
+  const [user, setUser] = useState(
+  JSON.parse(localStorage.getItem("user"))
+);
+
+  const isAdmin =
+    user?.role === "admin";
+  const isAgent =
+    user?.role === "agent";
+  const isCustomer =
+    user?.role === "user" ||
+    user?.role === "customer";
+
+  const dashboardHref =
+    isAdmin
+      ? "/admin-dashboard"
+      : isAgent
+      ? "/dashboard"
+      : "/customer-dashboard";
+
   useEffect(() => {
+
     /* ── TITLE ── */
     document.title =
       "GeoEstate · Nền Tảng Bất Động Sản Thông Minh";
@@ -171,6 +193,18 @@ function Layout({ children }) {
       "keydown",
       handleKeydown
     );
+    const syncUser = () => {
+  setUser(
+    JSON.parse(
+      localStorage.getItem("user")
+    )
+  );
+};
+
+window.addEventListener(
+  "storage",
+  syncUser
+);
 
     /* CLEANUP */
     return () => {
@@ -193,6 +227,11 @@ function Layout({ children }) {
         "keydown",
         handleKeydown
       );
+      window.removeEventListener(
+  "storage",
+  syncUser
+);
+
     };
   }, []);
 
@@ -256,6 +295,17 @@ function Layout({ children }) {
                 </a>
               </li>
 
+              {user && (
+                <li className="nav-item">
+                  <a
+                    className="nav-link"
+                    href={dashboardHref}
+                  >
+                    Dashboard
+                  </a>
+                </li>
+              )}
+
               <li className="nav-item dropdown">
                 <a
                   className="nav-link dropdown-toggle"
@@ -309,6 +359,74 @@ function Layout({ children }) {
                       So sánh hiện tại
                     </a>
                   </li>
+
+                  {user && (
+                    <li>
+                      <a
+                        className="dropdown-item"
+                        href="/wishlist"
+                      >
+                        Tin đã lưu
+                      </a>
+                    </li>
+                  )}
+
+                  {isCustomer && (
+                    <>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/lead-form"
+                        >
+                          Gửi nhu cầu tư vấn
+                        </a>
+                      </li>
+
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/appointments/create"
+                        >
+                          Tạo lịch hẹn
+                        </a>
+                      </li>
+                    </>
+                  )}
+
+                  {(isAgent || isAdmin) && (
+                    <>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/properties/create"
+                        >
+                          Đăng tin mới
+                        </a>
+                      </li>
+                    </>
+                  )}
+
+                  {isAdmin && (
+                    <>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/admin-dashboard"
+                        >
+                          Dashboard quản trị
+                        </a>
+                      </li>
+
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/admin-console"
+                        >
+                          Admin Console
+                        </a>
+                      </li>
+                    </>
+                  )}
                 </ul>
               </li>
             </ul>
@@ -354,25 +472,169 @@ function Layout({ children }) {
                 <i className="bi bi-heart"></i>
               </a>
 
-              {/* LOGIN */}
-              <a
-                className="btn-geo-secondary"
-                href="/login"
-                style={{
-                  padding: "9px 14px",
-                  fontSize: "13px",
-                  borderRadius: "999px",
-                }}
-              >
-                Đăng nhập
-              </a>
+              {user ? (
+              <>
+              <div className="dropdown">
+                <a
+                  className="nav-user-box dropdown-toggle text-decoration-none"
+                  href="#"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <i className="bi bi-person-circle"></i>
 
-              {/* REGISTER */}
-              <a className="btn-admin" href="/properties/create">
-                <i className="bi bi-building-add"></i>
+                  <span>
+                    {user.full_name || user.username}
+                  </span>
+                </a>
 
-                Đăng tin
-              </a>
+                <ul
+                  className="dropdown-menu dropdown-menu-end border-0 shadow-sm"
+                  style={{
+                    borderRadius: "14px",
+                    padding: "10px",
+                    minWidth: "220px",
+                  }}
+                >
+                  <li>
+                    <a
+                      className="dropdown-item"
+                      href="/profile"
+                    >
+                      Hồ sơ cá nhân
+                    </a>
+                  </li>
+
+                  <li>
+                    <a
+                      className="dropdown-item"
+                      href={dashboardHref}
+                    >
+                      Trang tổng quan
+                    </a>
+                  </li>
+
+                  <li>
+                    <a
+                      className="dropdown-item"
+                      href="/wishlist"
+                    >
+                      Tin đã lưu
+                    </a>
+                  </li>
+
+                  {isCustomer && (
+                    <>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/lead-form"
+                        >
+                          Gửi yêu cầu tư vấn
+                        </a>
+                      </li>
+
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/appointments/create"
+                        >
+                          Tạo lịch hẹn
+                        </a>
+                      </li>
+                    </>
+                  )}
+
+                  {(isAgent || isAdmin) && (
+                    <li>
+                      <a
+                        className="dropdown-item"
+                        href="/properties/create"
+                      >
+                        Đăng tin mới
+                      </a>
+                    </li>
+                  )}
+
+                  {isAdmin && (
+                    <>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/admin-dashboard"
+                        >
+                          Dashboard quản trị
+                        </a>
+                      </li>
+
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="/admin-console"
+                        >
+                          Admin Console
+                        </a>
+                      </li>
+                    </>
+                  )}
+                </ul>
+              </div>
+
+    {/* LOGOUT */}
+    <a
+      className="btn-geo-danger"
+      href="/login"
+      style={{
+        padding: "9px 14px",
+        fontSize: "13px",
+        borderRadius: "999px",
+      }}
+      onClick={() => {
+        api.logout();
+        localStorage.removeItem("user");
+        setUser(null);
+      }}
+    >
+      Đăng xuất
+    </a>
+  </>
+) : (
+  <>
+    {/* LOGIN */}
+    <a
+      className="btn-geo-secondary"
+      href="/login"
+      style={{
+        padding: "9px 14px",
+        fontSize: "13px",
+        borderRadius: "999px",
+      }}
+    >
+      Đăng nhập
+    </a>
+
+    <a
+      className="btn-admin"
+      href="/register"
+      style={{
+        padding: "9px 14px",
+      }}
+    >
+      Đăng ký
+    </a>
+  </>
+)}
+
+              
+              {/* CREATE */}
+              {(isAgent || isAdmin) && (
+                <a className="btn-admin" href="/properties/create">
+                  <i className="bi bi-building-add"></i>
+
+                  Đăng tin
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -423,21 +685,21 @@ function Layout({ children }) {
 
               <ul className="footer-links">
                 <li>
-                  <a href="#">
+                  <a href="/properties">
                     <i className="bi bi-grid-3x3-gap"></i>
                     Bất động sản
                   </a>
                 </li>
 
                 <li>
-                  <a href="#">
+                  <a href="/nearby">
                     <i className="bi bi-geo-alt"></i>
                     Tìm kiếm
                   </a>
                 </li>
 
                 <li>
-                  <a href="#">
+                  <a href="/amenities">
                     <i className="bi bi-stars"></i>
                     Tiện ích
                   </a>

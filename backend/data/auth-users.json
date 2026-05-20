@@ -1,10 +1,10 @@
 {
-  "nextId": 4,
+  "nextId": 10,
   "users": [
     {
       "id": 1,
       "username": "admin",
-      "password": "pbkdf2$a590d4cd529bc951995ea0b325d9c8bf$QWuNwvjLe/hpY+9LEe9LYvKhgRGWAMuoWDPNcW042rU=",
+      "password": "pbkdf2$f84bc87fc166b6173721bd0a87773589$p0xKU0AU+z4flzQEGkwRZp/zMO2slY0Bxq5ajBkqChs=",
       "email": "admin@mnm.local",
       "full_name": "System Admin",
       "role": "admin",
@@ -25,6 +25,60 @@
       "password": "pbkdf2$65c7c7cc5eaee90f85e1c81d0f85315a$fWkDCSdgdq05l29pD6fRXGBsMvTGDdGWJqd+ZEcijts=",
       "email": "user@mnm.local",
       "full_name": "Demo User",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 4,
+      "username": "Nhai",
+      "password": "pbkdf2$1268bf3dd223a9a0e65002a2bfa6ed37$G0Bm41uQSpU2HvuM5s5DjCKwWG5rZ4xWfKvA5iedF40=",
+      "email": "kimlien@gmail.com",
+      "full_name": "Kim",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 5,
+      "username": "Kim",
+      "password": "pbkdf2$a914b95978d5555bf833ed9faf4c0279$bmJClXIDMc9GpfZlFSg1dieH/O7eSBza9LeBOd6PnH0=",
+      "email": "kim@gmail.com",
+      "full_name": "Nhai",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 6,
+      "username": "Tú",
+      "password": "pbkdf2$b5808c552d8e50e4fa9a124e0e0bd7ab$ZGLC+9TacO5ksDBIsfKk34T+qpyGRrNgf+/TN697VVw=",
+      "email": "tu@gmail.com",
+      "full_name": "rụ",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 7,
+      "username": "lin",
+      "password": "pbkdf2$9215868a9d1c374ffe5e9c0f00a6d693$09Q+Sm5OesRhLP7j881g8Gd6+nCKhBye8NKH3mtDpCc=",
+      "email": "lin@gmail.com",
+      "full_name": "moigioi",
+      "role": "agent",
+      "linked_agent_id": null
+    },
+    {
+      "id": 8,
+      "username": "moigioi",
+      "password": "pbkdf2$8083bc8cb81fb19d3e70d8d3c7a9ba3e$Bt7vU7quatPowiC0APwrXHbRe1QI26AnpIjHJozXu+w=",
+      "email": "moigioi@mnm.local",
+      "full_name": "Môi giới demo",
+      "role": "agent",
+      "linked_agent_id": null
+    },
+    {
+      "id": 9,
+      "username": "khachhang",
+      "password": "pbkdf2$3436df7df42dbf08f4e24d2fd87f02ac$eP0DTTDg90ggJh4jCAzNjS+DKAeh9xnJFZ4KwT5nndM=",
+      "email": "khachhang@mnm.local",
+      "full_name": "Khách hàng demo",
       "role": "user",
       "linked_agent_id": null
     }
