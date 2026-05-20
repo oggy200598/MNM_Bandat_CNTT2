@@ -351,14 +351,12 @@ export function PropertyListPage() {
 
   let properties = await api.properties(query);
 
-  /* FALLBACK FILTER */
   if (!properties || !properties.length) {
     properties = fallbackProperties;
   }
 
   let filtered = [...properties];
 
-  /* TYPE */
   if (nextFilters.type) {
     filtered = filtered.filter(
       (item) =>
@@ -367,7 +365,6 @@ export function PropertyListPage() {
     );
   }
 
-  /* KEYWORD */
   if (nextFilters.q) {
     const keyword =
       nextFilters.q.toLowerCase();
@@ -383,7 +380,6 @@ export function PropertyListPage() {
     );
   }
 
-  /* PRICE */
   if (nextFilters.priceMin) {
     filtered = filtered.filter(
       (item) =>
@@ -400,7 +396,6 @@ export function PropertyListPage() {
     );
   }
 
-  /* AREA */
   if (nextFilters.areaMin) {
     filtered = filtered.filter(
       (item) =>
@@ -417,7 +412,6 @@ export function PropertyListPage() {
     );
   }
 
-  /* SORT */
   if (nextFilters.sort === "price_asc") {
     filtered.sort((a, b) => a.price - b.price);
   }
