@@ -122,13 +122,6 @@ export default function RegisterPage() {
                   Môi giới
                 </option>
               </select>
-
-              <div className="muted-line small-text">
-                Bạn chỉ có thể tự đăng ký
-                vai trò Khách hàng hoặc
-                Môi giới. Vai trò Quản trị
-                được cấp thủ công từ backend.
-              </div>
             </label>
 
             <label className="extra-field">

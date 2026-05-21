@@ -39,20 +39,9 @@ export default function PasswordResetPage() {
         style={{ maxWidth: "640px" }}
       >
         <div className="extra-card p-4 p-md-5">
-          <p className="section-eyebrow">
-            Khôi phục quyền truy cập
-          </p>
-
           <h1 className="section-heading mb-4">
             Quên mật khẩu?
           </h1>
-
-          <p className="extra-desc mb-4">
-            Nhập email của bạn.
-            Chúng tôi sẽ gửi một mã
-            xác nhận 6 số để bạn
-            thiết lập lại mật khẩu.
-          </p>
 
           <form
             onSubmit={submit}

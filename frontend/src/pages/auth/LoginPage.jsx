@@ -124,12 +124,6 @@ export default function LoginPage() {
             Đăng nhập hệ thống
           </h1>
 
-          <p className="muted-line">
-            Truy cập dashboard,
-            quản lý bất động sản
-            và dữ liệu khách hàng.
-          </p>
-
         </div>
 
         <label className="extra-field">
