@@ -7,7 +7,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "db:init": "node db-init.js",
+    "db:seed": "node migrations/002_seed_data.js",
+    "db:seed:rich": "node scripts/seed-rich-demo-data.js",
+    "db:normalize:vi": "node scripts/normalize-vietnamese-demo-data.js"
   },
   "keywords": [],
   "author": "",

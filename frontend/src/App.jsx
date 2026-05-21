@@ -34,6 +34,8 @@ import RegisterPage
 
 import PasswordResetPage
   from "./pages/auth/PasswordResetPage";
+import GoogleAuthCallbackPage
+  from "./pages/auth/GoogleAuthCallbackPage";
 
 /* ======================
    USER PAGES
@@ -183,6 +185,11 @@ export default function App() {
         <Route
           path="/password-reset"
           element={<PasswordResetPage />}
+        />
+
+        <Route
+          path="/auth/google/callback"
+          element={<GoogleAuthCallbackPage />}
         />
 
         {/* ======================

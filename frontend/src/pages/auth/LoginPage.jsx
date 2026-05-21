@@ -13,6 +13,8 @@ export default function LoginPage() {
 
   const [redirect, setRedirect] =
     useState(null);
+  const googleLoginUrl =
+    `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000/api"}`.replace(/\/api$/, "/api/auth/google/start");
 
   const submit = async (event) => {
 
@@ -48,6 +50,9 @@ export default function LoginPage() {
         JSON.stringify(
           result.user
         )
+      );
+      window.dispatchEvent(
+        new Event("auth-changed")
       );
 
       setMessage(
@@ -170,6 +175,17 @@ export default function LoginPage() {
 
           }
 
+        </button>
+
+        <button
+          type="button"
+          className="btn-geo-secondary full"
+          onClick={() => {
+            window.location.href =
+              googleLoginUrl;
+          }}
+        >
+          Đăng nhập với Google
         </button>
 
         {

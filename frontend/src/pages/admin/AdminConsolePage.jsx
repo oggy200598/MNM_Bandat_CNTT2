@@ -5,13 +5,13 @@ import "../../App.css";
 import { api, formatPrice, typeLabel, statusLabel } from "../../api";
 
 const SECTIONS = [
-  { id: "overview", label: "Tổng quan" },
-  { id: "properties", label: "Bất động sản" },
-  { id: "images", label: "Hình ảnh" },
-  { id: "leads", label: "Khách hàng" },
-  { id: "agents", label: "Môi giới" },
-  { id: "amenities", label: "Tiện ích" },
-  { id: "reports", label: "Thống kê" },
+  { id: "overview", label: "Tổng quan", icon: "bi-speedometer2" },
+  { id: "properties", label: "Bất động sản", icon: "bi-buildings" },
+  { id: "images", label: "Hình ảnh", icon: "bi-images" },
+  { id: "leads", label: "Khách hàng", icon: "bi-people" },
+  { id: "agents", label: "Môi giới", icon: "bi-person-badge" },
+  { id: "amenities", label: "Tiện ích", icon: "bi-pin-map" },
+  { id: "reports", label: "Thống kê", icon: "bi-bar-chart" },
 ];
 
 const LEAD_STAGES = [
@@ -51,11 +51,57 @@ function emptyAmenityForm() {
   };
 }
 
+function emptyAgentForm() {
+  return {
+    name: "",
+    email: "",
+    phone: "",
+  };
+}
+
 function formatDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString("vi-VN");
+}
+
+function statusTone(status) {
+  const key = String(status || "").toLowerCase();
+  if (key === "active" || key === "won") return "success";
+  if (key === "pending" || key === "new") return "warning";
+  if (key === "sold" || key === "qualified") return "info";
+  if (key === "hidden" || key === "lost") return "muted";
+  if (key === "contacted") return "accent";
+  return "default";
+}
+
+function AdminStatusBadge({ children, tone = "default" }) {
+  return <span className={`admin-status-badge tone-${tone}`}>{children}</span>;
+}
+
+function propertyTypeTone(type) {
+  const key = String(type || "").toLowerCase();
+  if (key === "apartment") return "info";
+  if (key === "house") return "warning";
+  if (key === "land") return "success";
+  if (key === "villa") return "accent";
+  return "default";
+}
+
+function toneColor(tone) {
+  return {
+    gold: "#c59d4f",
+    warning: "#d2a94d",
+    blue: "#4e7fd0",
+    info: "#4e7fd0",
+    emerald: "#43b283",
+    success: "#43b283",
+    purple: "#8b6bc1",
+    accent: "#8b6bc1",
+    muted: "#9aa4b2",
+    default: "#c59d4f",
+  }[tone || "default"] || "#c59d4f";
 }
 
 function AdminMetricCard({ label, value, note }) {
@@ -65,6 +111,141 @@ function AdminMetricCard({ label, value, note }) {
       <strong>{value}</strong>
       {note && <p>{note}</p>}
     </article>
+  );
+}
+
+function MiniChartList({ items }) {
+  const maxValue = Math.max(...items.map((item) => Number(item.value) || 0), 1);
+
+  return (
+    <div className="admin-chart-stack">
+      {items.map((item) => (
+        <div className="admin-chart-row" key={item.label}>
+          <div className="admin-chart-row-head">
+            <strong>{item.label}</strong>
+            <span>{item.value}</span>
+          </div>
+          <div className="admin-chart-track">
+            <div
+              className={`admin-chart-fill tone-${item.tone || "gold"}`}
+              style={{ width: `${Math.max(8, Math.round(((Number(item.value) || 0) / maxValue) * 100))}%` }}
+            />
+          </div>
+          {item.note && <p className="muted-line">{item.note}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function paginateItems(items, page, pageSize) {
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const start = (safePage - 1) * pageSize;
+
+  return {
+    page: safePage,
+    pageSize,
+    totalItems,
+    totalPages,
+    items: items.slice(start, start + pageSize),
+  };
+}
+
+function AdminPagination({ page, totalPages, totalItems, onChange }) {
+  if (!totalItems) return null;
+
+  return (
+    <div className="admin-pagination">
+      <span className="muted-line">Trang {page} / {totalPages} · {totalItems} bản ghi</span>
+      <div className="admin-row-actions">
+        <button type="button" className="btn-geo-secondary" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+          <i className="bi bi-chevron-left"></i>
+          Trước
+        </button>
+        <button type="button" className="btn-geo-secondary" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
+          Sau
+          <i className="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BarChart({ items, height = 220 }) {
+  const maxValue = Math.max(...items.map((item) => Number(item.value) || 0), 1);
+
+  return (
+    <div className="admin-bar-chart">
+      <svg viewBox={`0 0 ${items.length * 88} ${height}`} className="admin-bar-chart-svg" role="img" aria-label="Biểu đồ cột">
+        {items.map((item, index) => {
+          const value = Number(item.value) || 0;
+          const barHeight = Math.max(10, (value / maxValue) * (height - 72));
+          const x = 18 + index * 88;
+          const y = height - 42 - barHeight;
+
+          return (
+            <g key={item.label}>
+              <text x={x + 26} y={y - 8} textAnchor="middle" className="admin-bar-value">
+                {value}
+              </text>
+              <rect x={x} y={y} rx="12" ry="12" width="52" height={barHeight} fill={toneColor(item.tone)} opacity="0.95" />
+              <text x={x + 26} y={height - 18} textAnchor="middle" className="admin-bar-label">
+                {item.shortLabel || item.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function DonutChart({ items, size = 220 }) {
+  const total = items.reduce((sum, item) => sum + (Number(item.value) || 0), 0) || 1;
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
+  return (
+    <div className="admin-donut-wrap">
+      <svg viewBox="0 0 220 220" className="admin-donut-chart" role="img" aria-label="Biểu đồ tròn">
+        <circle cx="110" cy="110" r={radius} fill="none" stroke="rgba(15,23,42,0.08)" strokeWidth="24" />
+        {items.map((item) => {
+          const value = Number(item.value) || 0;
+          const segment = (value / total) * circumference;
+          const currentOffset = offset;
+          offset += segment;
+          return (
+            <circle
+              key={item.label}
+              cx="110"
+              cy="110"
+              r={radius}
+              fill="none"
+              stroke={toneColor(item.tone)}
+              strokeWidth="24"
+              strokeDasharray={`${segment} ${circumference - segment}`}
+              strokeDashoffset={-currentOffset}
+              transform="rotate(-90 110 110)"
+              strokeLinecap="butt"
+            />
+          );
+        })}
+        <text x="110" y="102" textAnchor="middle" className="admin-donut-total-label">Tổng</text>
+        <text x="110" y="126" textAnchor="middle" className="admin-donut-total-value">{total}</text>
+      </svg>
+      <div className="admin-donut-legend">
+        {items.map((item) => (
+          <div key={item.label} className="admin-donut-legend-item">
+            <span className="admin-donut-dot" style={{ backgroundColor: toneColor(item.tone) }}></span>
+            <strong>{item.label}</strong>
+            <span>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -84,6 +265,7 @@ function AdminSectionHeader({ eyebrow, title, desc, actions }) {
 export default function AdminConsolePage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -93,8 +275,17 @@ export default function AdminConsolePage() {
   const [agents, setAgents] = useState([]);
   const [amenities, setAmenities] = useState([]);
   const [propertyEditingId, setPropertyEditingId] = useState(null);
+  const [agentEditingId, setAgentEditingId] = useState(null);
   const [amenityEditingId, setAmenityEditingId] = useState(null);
+  const [selectedPropertyIds, setSelectedPropertyIds] = useState([]);
+  const [tablePages, setTablePages] = useState({
+    properties: 1,
+    leads: 1,
+    agents: 1,
+    amenities: 1,
+  });
   const [propertyForm, setPropertyForm] = useState(emptyPropertyForm());
+  const [agentForm, setAgentForm] = useState(emptyAgentForm());
   const [amenityForm, setAmenityForm] = useState(emptyAmenityForm());
 
   // Image management state
@@ -104,6 +295,7 @@ export default function AdminConsolePage() {
   const [imageForm, setImageForm] = useState({ file: null, caption: "", sort_order: 0 });
   const [imageMessage, setImageMessage] = useState("");
   const [imageLoading, setImageLoading] = useState(false);
+  const [draggingImageId, setDraggingImageId] = useState(null);
 
   const pathParts = location.pathname.split("/").filter(Boolean);
   const requestedSection = pathParts[1] || "overview";
@@ -155,6 +347,15 @@ export default function AdminConsolePage() {
     }
   }, [location.pathname, navigate]);
 
+  useEffect(() => {
+    const propertyId = searchParams.get("propertyId");
+
+    if (activeSection === "images" && propertyId) {
+      setImageTargetPropertyId(propertyId);
+      loadImagesForProperty(propertyId);
+    }
+  }, [activeSection, location.search]);
+
   const propertyTypeStats = useMemo(() => {
     if (dashboard?.property_type_stats?.length) {
       return dashboard.property_type_stats;
@@ -201,9 +402,147 @@ export default function AdminConsolePage() {
       .slice(0, 5);
   }, [properties]);
 
+  const propertyPage = useMemo(
+    () => paginateItems(properties, tablePages.properties, 8),
+    [properties, tablePages.properties]
+  );
+
+  const leadPage = useMemo(
+    () => paginateItems(leads, tablePages.leads, 8),
+    [leads, tablePages.leads]
+  );
+
+  const agentPage = useMemo(
+    () => paginateItems(agents, tablePages.agents, 8),
+    [agents, tablePages.agents]
+  );
+
+  const amenityPage = useMemo(
+    () => paginateItems(amenities, tablePages.amenities, 8),
+    [amenities, tablePages.amenities]
+  );
+
+  const reportSummary = useMemo(() => {
+    const inventoryValue = properties.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+    const averagePrice = properties.length ? inventoryValue / properties.length : 0;
+    const activeTotal = propertyStatusStats.active || 0;
+    const soldTotal = propertyStatusStats.sold || 0;
+    const leadTotal = leads.length;
+    const wonTotal = leadStageStats.won || 0;
+    const conversionRate = leadTotal ? Math.round((wonTotal / leadTotal) * 100) : 0;
+
+    return {
+      inventoryValue,
+      averagePrice,
+      activeTotal,
+      soldTotal,
+      leadTotal,
+      conversionRate,
+    };
+  }, [leadStageStats, leads.length, properties, propertyStatusStats]);
+
+  function downloadBlob(filename, content, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportReportsCsv() {
+    const lines = [
+      ["Nhóm", "Tên", "Giá trị"],
+      ...propertyTypeStats.map((item) => ["Loại bất động sản", typeLabel(item.property_type), item.count]),
+      ...LEAD_STAGES.map((item) => ["Pipeline lead", item.label, leadStageStats[item.value] || 0]),
+      ["Trạng thái tin", "Đang bán", propertyStatusStats.active || 0],
+      ["Trạng thái tin", "Chờ duyệt", propertyStatusStats.pending || 0],
+      ["Trạng thái tin", "Đã bán", propertyStatusStats.sold || 0],
+      ["Trạng thái tin", "Ẩn", propertyStatusStats.hidden || 0],
+      ...topAgents.map((item) => ["Top môi giới", item.name, item.total]),
+    ];
+
+    const csv = lines
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    downloadBlob("admin-report.csv", "\uFEFF" + csv, "text/csv;charset=utf-8;");
+  }
+
+  function exportReportsPdf() {
+    const html = `
+      <html>
+        <head>
+          <title>Admin Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #1f2937; }
+            h1, h2 { margin: 0 0 12px; }
+            .meta { margin-bottom: 24px; color: #6b7280; }
+            .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+            .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+            .card strong { display: block; font-size: 24px; margin-top: 8px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+            th, td { border-bottom: 1px solid #e5e7eb; padding: 10px; text-align: left; }
+            th { background: #f8fafc; }
+          </style>
+        </head>
+        <body>
+          <h1>Báo cáo quản trị</h1>
+          <div class="meta">Xuất lúc: ${formatDate(new Date().toISOString())}</div>
+          <div class="grid">
+            <div class="card">Tổng nguồn hàng<strong>${properties.length}</strong></div>
+            <div class="card">Tổng giá trị niêm yết<strong>${formatPrice(reportSummary.inventoryValue)}</strong></div>
+            <div class="card">Lead hiện có<strong>${reportSummary.leadTotal}</strong></div>
+            <div class="card">Tỉ lệ chuyển đổi<strong>${reportSummary.conversionRate}%</strong></div>
+          </div>
+          <h2>Loại bất động sản</h2>
+          <table>
+            <thead><tr><th>Loại</th><th>Số lượng</th></tr></thead>
+            <tbody>${propertyTypeStats.map((item) => `<tr><td>${typeLabel(item.property_type)}</td><td>${item.count}</td></tr>`).join("")}</tbody>
+          </table>
+          <h2>Pipeline lead</h2>
+          <table>
+            <thead><tr><th>Giai đoạn</th><th>Số lượng</th></tr></thead>
+            <tbody>${LEAD_STAGES.map((item) => `<tr><td>${item.label}</td><td>${leadStageStats[item.value] || 0}</td></tr>`).join("")}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const reportWindow = window.open("", "_blank", "width=960,height=720");
+    if (!reportWindow) {
+      setMessage("Trình duyệt đang chặn popup xuất PDF.");
+      return;
+    }
+
+    reportWindow.document.open();
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+    reportWindow.focus();
+    reportWindow.print();
+  }
+
   function selectSection(sectionId) {
     navigate(`/admin-console/${sectionId}`);
     setMessage("");
+  }
+
+  function setTablePage(key, page) {
+    setTablePages((prev) => ({
+      ...prev,
+      [key]: page,
+    }));
+  }
+
+  function openImagesForProperty(propertyId) {
+    navigate(`/admin-console/images?propertyId=${propertyId}`);
+    setImageTargetPropertyId(String(propertyId));
+    setImageTargetProperty(null);
+    setImages([]);
+    setImageMessage("");
   }
 
   function resetPropertyForm() {
@@ -216,6 +555,11 @@ export default function AdminConsolePage() {
     setAmenityForm(emptyAmenityForm());
   }
 
+  function resetAgentForm() {
+    setAgentEditingId(null);
+    setAgentForm(emptyAgentForm());
+  }
+
   function handlePropertyField(event) {
     setPropertyForm((prev) => ({
       ...prev,
@@ -225,6 +569,13 @@ export default function AdminConsolePage() {
 
   function handleAmenityField(event) {
     setAmenityForm((prev) => ({
+      ...prev,
+      [event.target.name]: event.target.value,
+    }));
+  }
+
+  function handleAgentField(event) {
+    setAgentForm((prev) => ({
       ...prev,
       [event.target.name]: event.target.value,
     }));
@@ -287,6 +638,63 @@ export default function AdminConsolePage() {
     }
   }
 
+  function togglePropertySelection(propertyId) {
+    setSelectedPropertyIds((prev) =>
+      prev.includes(String(propertyId))
+        ? prev.filter((item) => item !== String(propertyId))
+        : [...prev, String(propertyId)]
+    );
+  }
+
+  function toggleAllProperties() {
+    const currentPageIds = propertyPage.items.map((item) => String(item.id));
+    const allCurrentSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedPropertyIds.includes(id));
+
+    if (allCurrentSelected) {
+      setSelectedPropertyIds((prev) => prev.filter((id) => !currentPageIds.includes(id)));
+      return;
+    }
+
+    setSelectedPropertyIds((prev) => [...new Set([...prev, ...currentPageIds])]);
+  }
+
+  async function runBulkPropertyAction(action) {
+    if (!selectedPropertyIds.length) {
+      setMessage("Hãy chọn ít nhất một bất động sản.");
+      return;
+    }
+
+    const selectedRows = properties.filter((item) => selectedPropertyIds.includes(String(item.id)));
+
+    if (action === "delete") {
+      if (!window.confirm(`Xóa ${selectedRows.length} bất động sản đã chọn?`)) return;
+      await Promise.all(selectedRows.map((item) => api.deleteProperty(item.id)));
+      setSelectedPropertyIds([]);
+      await loadAll();
+      setMessage(`Đã xóa ${selectedRows.length} bất động sản.`);
+      return;
+    }
+
+    const nextStatus =
+      action === "activate"
+        ? "active"
+        : "hidden";
+
+    await Promise.all(
+      selectedRows.map((item) =>
+        api.updatePropertyStage(item.id, { listing_status: nextStatus })
+      )
+    );
+
+    setSelectedPropertyIds([]);
+    await loadAll();
+    setMessage(
+      action === "activate"
+        ? `Đã duyệt ${selectedRows.length} bất động sản.`
+        : `Đã ẩn ${selectedRows.length} bất động sản.`
+    );
+  }
+
   async function updateLeadStage(row, stage) {
     const saved = await api.updateLeadStage(row.id, { pipeline_stage: stage });
     if (saved?.id) {
@@ -297,6 +705,59 @@ export default function AdminConsolePage() {
       return;
     }
     setMessage("Không cập nhật được lead.");
+  }
+
+  async function submitAgent(event) {
+    event.preventDefault();
+
+    try {
+      const payload = {
+        name: agentForm.name?.trim(),
+        email: agentForm.email?.trim() || null,
+        phone: agentForm.phone?.trim() || null,
+      };
+
+      const saved = agentEditingId
+        ? await api.updateAgent(agentEditingId, payload)
+        : await api.createAgent(payload);
+
+      if (saved?.id) {
+        resetAgentForm();
+        await loadAll();
+        setMessage(
+          agentEditingId
+            ? `Đã cập nhật môi giới #${saved.id}.`
+            : `Đã tạo môi giới #${saved.id}.`
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      setMessage("Không lưu được môi giới.");
+    }
+  }
+
+  function editAgent(row) {
+    setAgentEditingId(row.id);
+    setAgentForm({
+      name: row.name || "",
+      email: row.email || "",
+      phone: row.phone || "",
+    });
+    setMessage(`Đang sửa môi giới #${row.id}.`);
+  }
+
+  async function removeAgent(row) {
+    if (!window.confirm(`Xóa môi giới "${row.name}"? Các tin đang gán sẽ bị bỏ gán.`)) return;
+    const result = await api.deleteAgent(row.id);
+    if (result?.ok) {
+      if (String(agentEditingId) === String(row.id)) {
+        resetAgentForm();
+      }
+      await loadAll();
+      setMessage(`Đã xóa môi giới #${row.id}.`);
+    } else {
+      setMessage("Không xóa được môi giới.");
+    }
   }
 
   async function removeLead(row) {
@@ -424,15 +885,42 @@ export default function AdminConsolePage() {
         <div className="admin-shell-split">
           <section className="extra-card">
             <div className="admin-topbar">
-              <h3>Bảng bất động sản</h3>
-              <span className="muted-line">{properties.length} bản ghi</span>
+              <div className="admin-inline-copy">
+                <h3>Bảng bất động sản</h3>
+                <span className="muted-line">{properties.length} bản ghi</span>
+              </div>
+              <div className="admin-row-actions">
+                <span className="muted-line">{selectedPropertyIds.length} đang chọn</span>
+                <button type="button" className="btn-geo-secondary" onClick={() => runBulkPropertyAction("activate")}>
+                  <i className="bi bi-check2-circle"></i>
+                  Duyệt hàng loạt
+                </button>
+                <button type="button" className="btn-geo-secondary" onClick={() => runBulkPropertyAction("hide")}>
+                  <i className="bi bi-eye-slash"></i>
+                  Ẩn hàng loạt
+                </button>
+                <button type="button" className="btn-geo-secondary danger-btn" onClick={() => runBulkPropertyAction("delete")}>
+                  <i className="bi bi-trash3"></i>
+                  Xóa hàng loạt
+                </button>
+              </div>
             </div>
             <div className="table-wrap">
               <table className="admin-table">
                 <thead>
                   <tr>
+                    <th>
+                      <input
+                        type="checkbox"
+                        checked={
+                          propertyPage.items.length > 0
+                          && propertyPage.items.every((item) => selectedPropertyIds.includes(String(item.id)))
+                        }
+                        onChange={toggleAllProperties}
+                      />
+                    </th>
                     <th>ID</th>
-                    <th>Tên</th>
+                    <th className="admin-title-col">Tên</th>
                     <th>Loại</th>
                     <th>Trạng thái</th>
                     <th>Giá</th>
@@ -441,26 +929,49 @@ export default function AdminConsolePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {properties.map((row) => (
+                  {propertyPage.items.length ? propertyPage.items.map((row) => (
                     <tr key={`property-${row.id}`}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedPropertyIds.includes(String(row.id))}
+                          onChange={() => togglePropertySelection(row.id)}
+                        />
+                      </td>
                       <td>{row.id}</td>
-                      <td>{row.title}</td>
-                      <td>{typeLabel(row.property_type)}</td>
-                      <td>{statusLabel(row.listing_status)}</td>
+                      <td className="admin-title-cell">{row.title}</td>
+                      <td>
+                        <AdminStatusBadge tone={propertyTypeTone(row.property_type)}>
+                          {typeLabel(row.property_type)}
+                        </AdminStatusBadge>
+                      </td>
+                      <td>
+                        <AdminStatusBadge tone={statusTone(row.listing_status)}>
+                          {statusLabel(row.listing_status)}
+                        </AdminStatusBadge>
+                      </td>
                       <td>{formatPrice(row.price)}</td>
                       <td>{formatDate(row.updated_at)}</td>
                       <td>
                         <div className="admin-row-actions">
-                          <button type="button" className="btn-geo-secondary" onClick={() => editProperty(row)}>Sửa</button>
-                          <a className="btn-geo-secondary" href={`/properties/images/${row.id}`}>Ảnh</a>
-                          <button type="button" className="btn-geo-secondary danger-btn" onClick={() => removeProperty(row)}>Xóa</button>
+                          <button type="button" className="btn-geo-secondary" onClick={() => editProperty(row)}><i className="bi bi-pencil-square"></i>Sửa</button>
+                          <button type="button" className="btn-geo-secondary" onClick={() => openImagesForProperty(row.id)}><i className="bi bi-images"></i>Ảnh</button>
+                          <button type="button" className="btn-geo-secondary danger-btn" onClick={() => removeProperty(row)}><i className="bi bi-trash3"></i>Xóa</button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr><td colSpan="8" className="admin-empty-cell">Chưa có bất động sản nào.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
+            <AdminPagination
+              page={propertyPage.page}
+              totalPages={propertyPage.totalPages}
+              totalItems={propertyPage.totalItems}
+              onChange={(page) => setTablePage("properties", page)}
+            />
           </section>
 
           <form className="extra-card form-stack" onSubmit={submitProperty}>
@@ -498,14 +1009,14 @@ export default function AdminConsolePage() {
                   <th>ID</th>
                   <th>Khách hàng</th>
                   <th>Liên hệ</th>
-                  <th>Nhu cầu</th>
+                  <th className="admin-title-col">Nhu cầu</th>
                   <th>Giai đoạn</th>
                   <th>Tạo lúc</th>
                   <th className="table-actions-col">Thao tác</th>
                 </tr>
               </thead>
-              <tbody>
-                {leads.map((row) => (
+                <tbody>
+                {leadPage.items.length ? leadPage.items.map((row) => (
                   <tr key={`lead-${row.id}`}>
                     <td>{row.id}</td>
                     <td>{row.name || "—"}</td>
@@ -515,23 +1026,37 @@ export default function AdminConsolePage() {
                         <span>{row.phone || "—"}</span>
                       </div>
                     </td>
-                    <td>{row.property_interest || row.message || "—"}</td>
+                    <td className="admin-title-cell">{row.property_interest || row.message || "—"}</td>
                     <td>
-                      <select className="admin-inline-select" value={row.pipeline_stage || "new"} onChange={(event) => updateLeadStage(row, event.target.value)}>
-                        {LEAD_STAGES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                      </select>
+                      <div className="admin-stage-cell">
+                        <AdminStatusBadge tone={statusTone(row.pipeline_stage)}>
+                          {LEAD_STAGES.find((item) => item.value === (row.pipeline_stage || "new"))?.label || "Mới"}
+                        </AdminStatusBadge>
+                        <select className="admin-inline-select" value={row.pipeline_stage || "new"} onChange={(event) => updateLeadStage(row, event.target.value)}>
+                          {LEAD_STAGES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                        </select>
+                      </div>
                     </td>
                     <td>{formatDate(row.created_at)}</td>
                     <td>
                       <button type="button" className="btn-geo-secondary danger-btn" onClick={() => removeLead(row)}>
+                        <i className="bi bi-trash3"></i>
                         Xóa
                       </button>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr><td colSpan="7" className="admin-empty-cell">Chưa có lead nào trong hệ thống.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
+          <AdminPagination
+            page={leadPage.page}
+            totalPages={leadPage.totalPages}
+            totalItems={leadPage.totalItems}
+            onChange={(page) => setTablePage("leads", page)}
+          />
         </section>
       </div>
     );
@@ -546,32 +1071,68 @@ export default function AdminConsolePage() {
           <AdminMetricCard label="Top phụ trách" value={topAgents[0]?.name || "—"} note={topAgents[0] ? `${topAgents[0].total} tin` : "Chưa có dữ liệu"} />
           <AdminMetricCard label="Tin trung bình" value={agents.length ? (properties.length / agents.length).toFixed(1) : "0"} note="tin / môi giới" />
         </section>
-        <section className="extra-card">
-          <div className="table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Tên</th>
-                  <th>Email</th>
-                  <th>Điện thoại</th>
-                  <th>Số tin</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agents.map((row) => (
-                  <tr key={`agent-${row.id}`}>
-                    <td>{row.id}</td>
-                    <td>{row.name}</td>
-                    <td>{row.email || "—"}</td>
-                    <td>{row.phone || "—"}</td>
-                    <td>{row.properties?.length || 0}</td>
+        <div className="admin-shell-split">
+          <section className="extra-card">
+            <div className="admin-topbar">
+              <h3>Danh sách môi giới</h3>
+              <span className="muted-line">{agents.length} bản ghi</span>
+            </div>
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th className="admin-title-col">Tên</th>
+                    <th>Email</th>
+                    <th>Điện thoại</th>
+                    <th>Số tin</th>
+                    <th>Đánh giá</th>
+                    <th className="table-actions-col">Thao tác</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {agentPage.items.length ? agentPage.items.map((row) => (
+                    <tr key={`agent-${row.id}`}>
+                      <td>{row.id}</td>
+                      <td className="admin-title-cell">{row.name}</td>
+                      <td>{row.email || "—"}</td>
+                      <td>{row.phone || "—"}</td>
+                      <td>{row.properties?.length || 0}</td>
+                      <td>
+                        <AdminStatusBadge tone="gold">{row.rating || 5} / 5</AdminStatusBadge>
+                      </td>
+                      <td>
+                        <div className="admin-row-actions">
+                          <button type="button" className="btn-geo-secondary" onClick={() => editAgent(row)}><i className="bi bi-pencil-square"></i>Sửa</button>
+                          <button type="button" className="btn-geo-secondary danger-btn" onClick={() => removeAgent(row)}><i className="bi bi-trash3"></i>Xóa</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan="7" className="admin-empty-cell">Chưa có môi giới nào.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <AdminPagination
+              page={agentPage.page}
+              totalPages={agentPage.totalPages}
+              totalItems={agentPage.totalItems}
+              onChange={(page) => setTablePage("agents", page)}
+            />
+          </section>
+
+          <form className="extra-card form-stack" onSubmit={submitAgent}>
+            <h3>{agentEditingId ? `Sửa môi giới #${agentEditingId}` : "Tạo môi giới mới"}</h3>
+            <div className="field"><label>Họ tên</label><input name="name" value={agentForm.name} onChange={handleAgentField} /></div>
+            <div className="field"><label>Email</label><input name="email" type="email" value={agentForm.email} onChange={handleAgentField} /></div>
+            <div className="field"><label>Số điện thoại</label><input name="phone" value={agentForm.phone} onChange={handleAgentField} /></div>
+            <div className="admin-form-actions">
+              <button type="submit" className="btn-geo-primary">{agentEditingId ? "Lưu cập nhật" : "Tạo môi giới"}</button>
+              {agentEditingId && <button type="button" className="btn-geo-secondary" onClick={resetAgentForm}>Hủy sửa</button>}
+            </div>
+          </form>
+        </div>
       </div>
     );
   }
@@ -592,7 +1153,7 @@ export default function AdminConsolePage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Tên</th>
+                    <th className="admin-title-col">Tên</th>
                     <th>Loại</th>
                     <th>Vĩ độ</th>
                     <th>Kinh độ</th>
@@ -600,24 +1161,32 @@ export default function AdminConsolePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {amenities.map((row) => (
+                  {amenityPage.items.length ? amenityPage.items.map((row) => (
                     <tr key={`amenity-${row.id}`}>
                       <td>{row.id}</td>
-                      <td>{row.name}</td>
+                      <td className="admin-title-cell">{row.name}</td>
                       <td>{row.type || row.amenity_type}</td>
                       <td>{row.lat ?? "—"}</td>
                       <td>{row.lng ?? "—"}</td>
                       <td>
                         <div className="admin-row-actions">
-                          <button type="button" className="btn-geo-secondary" onClick={() => editAmenity(row)}>Sửa</button>
-                          <button type="button" className="btn-geo-secondary danger-btn" onClick={() => removeAmenity(row)}>Xóa</button>
+                          <button type="button" className="btn-geo-secondary" onClick={() => editAmenity(row)}><i className="bi bi-pencil-square"></i>Sửa</button>
+                          <button type="button" className="btn-geo-secondary danger-btn" onClick={() => removeAmenity(row)}><i className="bi bi-trash3"></i>Xóa</button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr><td colSpan="6" className="admin-empty-cell">Chưa có tiện ích nào.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
+            <AdminPagination
+              page={amenityPage.page}
+              totalPages={amenityPage.totalPages}
+              totalItems={amenityPage.totalItems}
+              onChange={(page) => setTablePage("amenities", page)}
+            />
           </section>
 
           <form className="extra-card form-stack" onSubmit={submitAmenity}>
@@ -637,57 +1206,103 @@ export default function AdminConsolePage() {
   }
 
   function renderReports() {
+    const propertyTypeChart = propertyTypeStats.map((item) => ({
+      label: typeLabel(item.property_type),
+      value: item.count,
+      tone:
+        item.property_type === "apartment"
+          ? "info"
+          : item.property_type === "house"
+          ? "warning"
+          : item.property_type === "land"
+          ? "success"
+          : "accent",
+      note: `${properties.length ? Math.round((item.count / properties.length) * 100) : 0}% tổng nguồn hàng`,
+    }));
+
+    const leadPipelineChart = LEAD_STAGES.map((item) => ({
+      label: item.label,
+      value: leadStageStats[item.value] || 0,
+      tone: statusTone(item.value),
+      note: `${leads.length ? Math.round(((leadStageStats[item.value] || 0) / leads.length) * 100) : 0}% tổng lead`,
+    }));
+
+    const propertyStatusChart = [
+      { label: "Đang bán", value: propertyStatusStats.active || 0, tone: "gold" },
+      { label: "Chờ duyệt", value: propertyStatusStats.pending || 0, tone: "warning" },
+      { label: "Đã bán", value: propertyStatusStats.sold || 0, tone: "info" },
+      { label: "Ẩn", value: propertyStatusStats.hidden || 0, tone: "muted" },
+    ];
+
+    const topAgentsChart = topAgents.map((item) => ({
+      label: item.name,
+      value: item.total,
+      tone: "accent",
+      note: `${properties.length ? Math.round((item.total / properties.length) * 100) : 0}% tổng số tin`,
+    }));
+
     return (
       <div className="admin-content-stack">
-        <AdminSectionHeader eyebrow="Thống kê" title="Báo cáo chi tiết" desc="Tổng hợp theo loại bất động sản, trạng thái, lead pipeline và hiệu suất môi giới." />
+        <AdminSectionHeader
+          eyebrow="Thống kê"
+          title="Báo cáo chi tiết"
+          desc="Tổng hợp theo loại bất động sản, trạng thái, lead pipeline và hiệu suất môi giới."
+          actions={
+            <>
+              <button type="button" className="btn-geo-secondary" onClick={exportReportsCsv}>
+                <i className="bi bi-filetype-csv"></i>
+                Xuất CSV
+              </button>
+              <button type="button" className="btn-geo-secondary" onClick={exportReportsPdf}>
+                <i className="bi bi-filetype-pdf"></i>
+                Xuất PDF
+              </button>
+            </>
+          }
+        />
+
+        <section className="admin-metric-grid">
+          <AdminMetricCard label="Tổng giá trị niêm yết" value={formatPrice(reportSummary.inventoryValue)} note={`Giá trung bình ${formatPrice(reportSummary.averagePrice)}`} />
+          <AdminMetricCard label="Nguồn hàng đang bán" value={reportSummary.activeTotal} note={`${reportSummary.soldTotal} tin đã bán`} />
+          <AdminMetricCard label="Tổng lead" value={reportSummary.leadTotal} note={`${reportSummary.conversionRate}% tỉ lệ chuyển đổi`} />
+          <AdminMetricCard label="Top môi giới" value={topAgents[0]?.name || "—"} note={topAgents[0] ? `${topAgents[0].total} tin đang phụ trách` : "Chưa có dữ liệu"} />
+        </section>
 
         <section className="admin-grid-panels">
           <article className="extra-card">
             <h3 className="admin-panel-title">Theo loại bất động sản</h3>
-            <div className="admin-stat-list">
-              {propertyTypeStats.map((item) => (
-                <div key={item.property_type}>
-                  <span>{typeLabel(item.property_type)}</span>
-                  <strong>{item.count}</strong>
-                </div>
-              ))}
-            </div>
+            <BarChart
+              items={propertyTypeChart.map((item) => ({
+                ...item,
+                shortLabel: item.label.split(" ")[0],
+              }))}
+            />
+            <MiniChartList items={propertyTypeChart} />
           </article>
 
           <article className="extra-card">
             <h3 className="admin-panel-title">Theo pipeline lead</h3>
-            <div className="admin-stat-list">
-              {LEAD_STAGES.map((item) => (
-                <div key={item.value}>
-                  <span>{item.label}</span>
-                  <strong>{leadStageStats[item.value] || 0}</strong>
-                </div>
-              ))}
-            </div>
+            <DonutChart items={leadPipelineChart} />
+            <MiniChartList items={leadPipelineChart} />
           </article>
         </section>
 
         <section className="admin-grid-panels">
           <article className="extra-card">
             <h3 className="admin-panel-title">Theo trạng thái tin</h3>
-            <div className="admin-stat-list">
-              <div><span>Đang bán</span><strong>{propertyStatusStats.active || 0}</strong></div>
-              <div><span>Chờ duyệt</span><strong>{propertyStatusStats.pending || 0}</strong></div>
-              <div><span>Đã bán</span><strong>{propertyStatusStats.sold || 0}</strong></div>
-              <div><span>Ẩn</span><strong>{propertyStatusStats.hidden || 0}</strong></div>
-            </div>
+            <DonutChart items={propertyStatusChart} />
+            <MiniChartList items={propertyStatusChart} />
           </article>
 
           <article className="extra-card">
             <h3 className="admin-panel-title">Top môi giới theo số tin</h3>
-            <div className="admin-stat-list">
-              {topAgents.map((item) => (
-                <div key={item.name}>
-                  <span>{item.name}</span>
-                  <strong>{item.total}</strong>
-                </div>
-              ))}
-            </div>
+            <BarChart
+              items={topAgentsChart.map((item) => ({
+                ...item,
+                shortLabel: item.label.split(" ").slice(-1)[0],
+              }))}
+            />
+            <MiniChartList items={topAgentsChart} />
           </article>
         </section>
       </div>
@@ -798,6 +1413,49 @@ export default function AdminConsolePage() {
     }
   }
 
+  async function reorderImagesByDrag(sourceImageId, targetImageId) {
+    if (!sourceImageId || !targetImageId || String(sourceImageId) === String(targetImageId)) {
+      return;
+    }
+
+    const sourceIndex = images.findIndex((item) => String(item.id) === String(sourceImageId));
+    const targetIndex = images.findIndex((item) => String(item.id) === String(targetImageId));
+
+    if (sourceIndex === -1 || targetIndex === -1) {
+      return;
+    }
+
+    const nextImages = [...images];
+    const [movedImage] = nextImages.splice(sourceIndex, 1);
+    nextImages.splice(targetIndex, 0, movedImage);
+
+    const orderedImages = nextImages.map((item, index) => ({
+      ...item,
+      sort_order: index,
+    }));
+
+    setImages(orderedImages);
+    setImageLoading(true);
+    setImageMessage("Đang cập nhật thứ tự ảnh...");
+
+    try {
+      await Promise.all(
+        orderedImages.map((item, index) =>
+          api.reorderPropertyImage(item.id, { sort_order: index })
+        )
+      );
+      setImageMessage("Đã sắp xếp lại ảnh.");
+      await loadImagesForProperty(imageTargetPropertyId);
+    } catch (err) {
+      console.error(err);
+      setImageMessage("Không cập nhật được thứ tự kéo-thả.");
+      await loadImagesForProperty(imageTargetPropertyId);
+    } finally {
+      setImageLoading(false);
+      setDraggingImageId(null);
+    }
+  }
+
   function handleImagePropertyIdChange(value) {
     setImageTargetPropertyId(value);
     if (value) {
@@ -822,7 +1480,19 @@ export default function AdminConsolePage() {
             <h3>Chọn bất động sản</h3>
           </div>
           <div className="field">
-            <label>Nhập ID bất động sản</label>
+            <label>Chọn bất động sản hoặc nhập ID</label>
+            <select
+              value={imageTargetPropertyId}
+              onChange={(e) => handleImagePropertyIdChange(e.target.value)}
+              style={{ marginBottom: 10 }}
+            >
+              <option value="">-- Chọn bất động sản --</option>
+              {properties.map((item) => (
+                <option key={item.id} value={item.id}>
+                  #{item.id} - {item.title}
+                </option>
+              ))}
+            </select>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
                 type="number"
@@ -885,11 +1555,19 @@ export default function AdminConsolePage() {
           <div className="extra-card">
             <div className="admin-topbar">
               <h3>Danh sách ảnh</h3>
-              <span className="muted-line">{images.length} ảnh</span>
+              <span className="muted-line">{images.length} ảnh · kéo-thả để đổi vị trí</span>
             </div>
             <div className="media-grid">
               {images.map((img, i) => (
-                <article className="mini-property-card" key={img.id}>
+                <article
+                  className={`mini-property-card admin-image-card ${draggingImageId === img.id ? "dragging" : ""}`}
+                  key={img.id}
+                  draggable={!imageLoading}
+                  onDragStart={() => setDraggingImageId(img.id)}
+                  onDragEnd={() => setDraggingImageId(null)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => reorderImagesByDrag(draggingImageId, img.id)}
+                >
                   <div
                     className="mini-media"
                     style={{ backgroundImage: `url(${img.image})` }}
@@ -899,6 +1577,7 @@ export default function AdminConsolePage() {
                   <div className="mini-content">
                     <strong>Thứ tự: {img.sort_order ?? i}</strong>
                     <p className="muted-line">{img.caption || imageTargetProperty?.title}</p>
+                    <p className="muted-line admin-drag-hint">Kéo ảnh này để đổi vị trí</p>
                     <div className="pill-row mt-3">
                       {!img.is_primary && (
                         <button
@@ -907,6 +1586,7 @@ export default function AdminConsolePage() {
                           onClick={() => setImageAsPrimary(img.id)}
                           disabled={imageLoading}
                         >
+                          <i className="bi bi-star"></i>
                           Đặt ảnh chính
                         </button>
                       )}
@@ -930,6 +1610,7 @@ export default function AdminConsolePage() {
                         onClick={() => deleteImage(img.id)}
                         disabled={imageLoading}
                       >
+                        <i className="bi bi-trash3"></i>
                         Xóa
                       </button>
                     </div>
@@ -964,7 +1645,7 @@ export default function AdminConsolePage() {
   }
 
   return (
-    <div className="container py-5">
+    <div className="container py-5 admin-console-page">
       <div className="mb-4">
         <p className="section-mini-title">Quản trị hệ thống</p>
         <h1 className="section-heading">Admin Console Suite</h1>
@@ -988,6 +1669,7 @@ export default function AdminConsolePage() {
                 className={activeSection === section.id ? "active" : ""}
                 onClick={() => selectSection(section.id)}
               >
+                <i className={`bi ${section.icon}`}></i>
                 {section.label}
               </button>
             ))}

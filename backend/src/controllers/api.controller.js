@@ -487,6 +487,77 @@ async function agentDetail(
   }
 }
 
+async function agentCreate(
+  req,
+  res
+) {
+  try {
+    res.status(201).json({
+      data:
+        await service.createAgent(
+          req.body
+        )
+    });
+  } catch (err) {
+    res.status(400).json({
+      error: err.message
+    });
+  }
+}
+
+async function agentUpdate(
+  req,
+  res
+) {
+  try {
+    const data =
+      await service.updateAgent(
+        req.params.id,
+        req.body
+      );
+
+    if (!data) {
+      return res.status(404).json({
+        error: "Agent not found"
+      });
+    }
+
+    res.json({
+      data
+    });
+  } catch (err) {
+    res.status(400).json({
+      error: err.message
+    });
+  }
+}
+
+async function agentDelete(
+  req,
+  res
+) {
+  try {
+    const ok =
+      await service.deleteAgent(
+        req.params.id
+      );
+
+    if (!ok) {
+      return res.status(404).json({
+        error: "Agent not found"
+      });
+    }
+
+    res.json({
+      data: { ok: true }
+    });
+  } catch (err) {
+    res.status(400).json({
+      error: err.message
+    });
+  }
+}
+
 async function agentReviews(
   req,
   res
@@ -536,6 +607,40 @@ async function dashboard(
     });
   } catch (err) {
     res.status(500).json({
+      error: err.message
+    });
+  }
+}
+
+async function aboutContent(
+  _req,
+  res
+) {
+  try {
+    res.json({
+      data:
+        await service.getAboutContent()
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
+}
+
+async function aboutContentUpdate(
+  req,
+  res
+) {
+  try {
+    res.json({
+      data:
+        await service.updateAboutContent(
+          req.body
+        )
+    });
+  } catch (err) {
+    res.status(400).json({
       error: err.message
     });
   }
@@ -930,9 +1035,14 @@ export default {
   amenitiesNearby,
   agentsList,
   agentDetail,
+  agentCreate,
+  agentUpdate,
+  agentDelete,
   agentReviews,
   agentReviewCreate,
   dashboard,
+  aboutContent,
+  aboutContentUpdate,
   leadsList,
   leadCreate,
   leadStageUpdate,

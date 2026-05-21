@@ -12,10 +12,13 @@ export default function WishlistPage() {
     useState([]);
   const [loading, setLoading] =
     useState(true);
+  const [error, setError] =
+    useState("");
 
   async function loadData() {
     try {
       setLoading(true);
+      setError("");
 
       const [
         wishlistData,
@@ -27,13 +30,23 @@ export default function WishlistPage() {
 
       setWishlist(
         Array.isArray(wishlistData)
-          ? wishlistData
+          ? wishlistData.filter(Boolean)
           : []
       );
       setCompare(
         Array.isArray(compareData)
-          ? compareData
+          ? compareData.filter(Boolean)
           : []
+      );
+    } catch (err) {
+      console.error(
+        "Wishlist load failed:",
+        err
+      );
+      setWishlist([]);
+      setCompare([]);
+      setError(
+        "Không tải được dữ liệu lưu trữ lúc này."
       );
     } finally {
       setLoading(false);
@@ -81,6 +94,10 @@ export default function WishlistPage() {
         {loading ? (
           <p className="muted-line">
             Đang tải...
+          </p>
+        ) : error ? (
+          <p className="muted-line">
+            {error}
           </p>
         ) : wishlist.length ? (
           <div className="mini-grid">
@@ -165,7 +182,15 @@ export default function WishlistPage() {
           Danh sách so sánh
         </h2>
 
-        {compare.length ? (
+        {loading ? (
+          <p className="muted-line">
+            Đang tải...
+          </p>
+        ) : error ? (
+          <p className="muted-line">
+            {error}
+          </p>
+        ) : compare.length ? (
           <div className="mini-grid">
             {compare.map((item) => {
               const p =

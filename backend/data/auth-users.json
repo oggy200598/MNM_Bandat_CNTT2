@@ -1,12 +1,12 @@
 {
-  "nextId": 10,
+  "nextId": 37,
   "users": [
     {
       "id": 1,
       "username": "admin",
       "password": "pbkdf2$f84bc87fc166b6173721bd0a87773589$p0xKU0AU+z4flzQEGkwRZp/zMO2slY0Bxq5ajBkqChs=",
       "email": "admin@mnm.local",
-      "full_name": "System Admin",
+      "full_name": "Quản trị hệ thống",
       "role": "admin",
       "linked_agent_id": null
     },
@@ -15,7 +15,7 @@
       "username": "agent",
       "password": "pbkdf2$79d5790ff18132656447252c243bc7d1$GQFrHl6ry8eO1gxV6BMabn55+BdHaV4md81NLxB09sk=",
       "email": "agent@mnm.local",
-      "full_name": "Demo Agent",
+      "full_name": "Môi giới demo",
       "role": "agent",
       "linked_agent_id": null
     },
@@ -24,7 +24,7 @@
       "username": "user",
       "password": "pbkdf2$65c7c7cc5eaee90f85e1c81d0f85315a$fWkDCSdgdq05l29pD6fRXGBsMvTGDdGWJqd+ZEcijts=",
       "email": "user@mnm.local",
-      "full_name": "Demo User",
+      "full_name": "Người dùng demo",
       "role": "user",
       "linked_agent_id": null
     },
@@ -60,7 +60,7 @@
       "username": "lin",
       "password": "pbkdf2$9215868a9d1c374ffe5e9c0f00a6d693$09Q+Sm5OesRhLP7j881g8Gd6+nCKhBye8NKH3mtDpCc=",
       "email": "lin@gmail.com",
-      "full_name": "moigioi",
+      "full_name": "Môi giới",
       "role": "agent",
       "linked_agent_id": null
     },
@@ -78,7 +78,250 @@
       "username": "khachhang",
       "password": "pbkdf2$3436df7df42dbf08f4e24d2fd87f02ac$eP0DTTDg90ggJh4jCAzNjS+DKAeh9xnJFZ4KwT5nndM=",
       "email": "khachhang@mnm.local",
-      "full_name": "Khách hàng demo",
+      "full_name": "Khách hàng",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 10,
+      "username": "minh.khang10",
+      "password": "pbkdf2$f30f9fcb21794a0a97d69dce94b0bf38$tB2XCxWRRZNTvGY0XVzYTKC4Mg7QX2lmA7gECimjIZA=",
+      "email": "minh.khang10@demo.local",
+      "full_name": "Minh Khang",
+      "role": "agent",
+      "linked_agent_id": "66"
+    },
+    {
+      "id": 11,
+      "username": "gia.han11",
+      "password": "pbkdf2$ecd5f8d598622926a654527c70c51a56$3HGtIDFasuviUpLMcnZWGTKwucHZhk58IC1plfKHZhg=",
+      "email": "gia.han11@demo.local",
+      "full_name": "Gia Hân",
+      "role": "agent",
+      "linked_agent_id": "67"
+    },
+    {
+      "id": 12,
+      "username": "bao.tran12",
+      "password": "pbkdf2$e2c6ac5c88459a9091a12231db8598e2$y23Co9Yvcv2H1Bis6zOTShLgEos5TKjmauTbcbOj3c4=",
+      "email": "bao.tran12@demo.local",
+      "full_name": "Bảo Trân",
+      "role": "agent",
+      "linked_agent_id": "68"
+    },
+    {
+      "id": 13,
+      "username": "thanh.lam13",
+      "password": "pbkdf2$30ab7c8d94eadecdad2c10f08b07e7fb$QdBpsv5n4TGb7HeVgc65mKG3R1l/GGABQFmyvjOb0SQ=",
+      "email": "thanh.lam13@demo.local",
+      "full_name": "Thanh Lam",
+      "role": "agent",
+      "linked_agent_id": "69"
+    },
+    {
+      "id": 14,
+      "username": "quoc.huy14",
+      "password": "pbkdf2$c54daae4f4f9f219b5d6b6c5a0c87fd9$7BOEN3TlnhKA8Ace5SNl/r09tg8SbtqjkJnqZbEBxrc=",
+      "email": "quoc.huy14@demo.local",
+      "full_name": "Quốc Huy",
+      "role": "agent",
+      "linked_agent_id": "70"
+    },
+    {
+      "id": 15,
+      "username": "thuy.tien15",
+      "password": "pbkdf2$96a40fc0fff0477356badc07ad773dfa$IVpF0Pv1lKVYiyzbNshShFlRLYdUHhr2SPPBmLI//MI=",
+      "email": "thuy.tien15@demo.local",
+      "full_name": "Thùy Tiên",
+      "role": "agent",
+      "linked_agent_id": "71"
+    },
+    {
+      "id": 16,
+      "username": "anh.khoa16",
+      "password": "pbkdf2$8b41d2834e47425679e09f056525bca7$MEc1n0vg8vEulhPKBuYL/5sMz6HV9GNXKWei6tEw52U=",
+      "email": "anh.khoa16@demo.local",
+      "full_name": "Anh Khoa",
+      "role": "agent",
+      "linked_agent_id": "75"
+    },
+    {
+      "id": 17,
+      "username": "kim.anh17",
+      "password": "pbkdf2$14231aa82b5844cb129ab8069063230e$hmnsyJcS0z/PjJ2OTSNA4hRqZ8HDRlEny1MQtfLXHtk=",
+      "email": "kim.anh17@demo.local",
+      "full_name": "Kim Anh",
+      "role": "agent",
+      "linked_agent_id": "76"
+    },
+    {
+      "id": 18,
+      "username": "minh.thu18",
+      "password": "pbkdf2$ede2cab24df0ce9224217ca26303a699$HSSqKghqsYYWFvX7K8DyHMSZa+vqfApaFgHvqz9ntmU=",
+      "email": "minh.thu18@demo.local",
+      "full_name": "Minh Thu",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 19,
+      "username": "quynh.nhu19",
+      "password": "pbkdf2$20281d14bf63d189f937bf5b6512a402$1GB+r6zo6fO4W0evb/nzA8J7K+jcpca99XK2AqNiGmY=",
+      "email": "quynh.nhu19@demo.local",
+      "full_name": "Quỳnh Như",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 20,
+      "username": "duc.huy20",
+      "password": "pbkdf2$a2dab1c89f2f05a72daec47e5e000afb$ZpQw9NiMwqzGTOiK6sl/ZNFeJFk6SV3whcbSBZr6GaI=",
+      "email": "duc.huy20@demo.local",
+      "full_name": "Duc Huy",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 21,
+      "username": "hoang.yen21",
+      "password": "pbkdf2$e258d6fa1f7f9661560de22c297ff07b$2pNJ7ijriHl5kACxwrTo4Ove55E56zDPGMtg6fOnMW0=",
+      "email": "hoang.yen21@demo.local",
+      "full_name": "Hoàng Yến",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 22,
+      "username": "thanh.dat22",
+      "password": "pbkdf2$840869327bb5bfa48080c57eb1ecfdf3$u98FJHLmsf+n58svtx6p1PR0mRN10KSefORn8L3xQG0=",
+      "email": "thanh.dat22@demo.local",
+      "full_name": "Thanh Đất",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 23,
+      "username": "bao.nhi23",
+      "password": "pbkdf2$47e603b89e95cc2d5fad76f44b292488$DU3H/G/1X4WOhg+CL4gYYSk1dEHBqLZJsx7KEPwQ128=",
+      "email": "bao.nhi23@demo.local",
+      "full_name": "Bảo Nhi",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 24,
+      "username": "gia.huy24",
+      "password": "pbkdf2$737273f4db5231a900fb9921119199b8$FiRt3rX4sAtrx1rLxD31aZhU4vwaXLslIl+qAyNC1BY=",
+      "email": "gia.huy24@demo.local",
+      "full_name": "Gia Huy",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 25,
+      "username": "thanh.truc25",
+      "password": "pbkdf2$eb02061c0bc87be9c48d8987c7eae909$HRU5w5ZbrjWio6MDxA9Jmy5NN+y3tC3mkriZ/tQMMJw=",
+      "email": "thanh.truc25@demo.local",
+      "full_name": "Thanh Trúc",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 26,
+      "username": "quoc.bao26",
+      "password": "pbkdf2$258f7133be1870e0b1b04c73a6b86495$jw4bW7Khq1jeHTUDJYQ9HQg21V/RQ3KfHXuiEIPms4A=",
+      "email": "quoc.bao26@demo.local",
+      "full_name": "Quoc Bao",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 27,
+      "username": "my.duyen27",
+      "password": "pbkdf2$b31f2c107b96d94de8247f5c395bd5c9$LgUmFwhRYaRXwpnUtFhEBjMuVn0b02ynVMt601z7UgM=",
+      "email": "my.duyen27@demo.local",
+      "full_name": "Mỹ Duyên",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 28,
+      "username": "khanh.an28",
+      "password": "pbkdf2$902b25d99de2ff96011c5ef81aa18cc2$A6HseU0lGziNnGKHx+PpN8g5PFqHBTiRacM2pd8dTmY=",
+      "email": "khanh.an28@demo.local",
+      "full_name": "Khanh An",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 29,
+      "username": "nhat.vy29",
+      "password": "pbkdf2$43f34c9a35ec73c382c5bc246fb865c4$tulD8N1F4XQgs6HrSOZ5aJFceComVK4dN8Ezb6+8kNw=",
+      "email": "nhat.vy29@demo.local",
+      "full_name": "Nhật Vy",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 30,
+      "username": "thanh.nhan30",
+      "password": "pbkdf2$f51900730258d97a41f5ff57000d5197$eIYh6GFi1J3Wyzex78rgh3ERsWIxCQ1zFwvmwfid93w=",
+      "email": "thanh.nhan30@demo.local",
+      "full_name": "Thanh Nhan",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 31,
+      "username": "tuan.kiet31",
+      "password": "pbkdf2$951762901b24c9b6d6b46b5d23316d77$ED5AyraARDoBjT2qrIcjMMaL/8dM86QEwtmhIK04fuQ=",
+      "email": "tuan.kiet31@demo.local",
+      "full_name": "Tuan Kiet",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 32,
+      "username": "ngoc.mai32",
+      "password": "pbkdf2$3cd3de4df13831c0deab57f529831d99$gHW8eJ/IKDTSyqHGaAlDa+QqjmdL+BrwcTFeanzu8Wg=",
+      "email": "ngoc.mai32@demo.local",
+      "full_name": "Ngọc Mai",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 33,
+      "username": "gia.linh33",
+      "password": "pbkdf2$3be6590388ebbf7558a5b6bed4017826$PBeEU2oQiPJSneHF7EvLjFvXT7xtKeaYKChegyWI2Fo=",
+      "email": "gia.linh33@demo.local",
+      "full_name": "Gia Linh",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 34,
+      "username": "hoang.nam34",
+      "password": "pbkdf2$9ec671a105767807d013995e82a07656$bufjTCHwITDe3AW82SPHlkNpY/hDoJdxpGxg3wdLb+A=",
+      "email": "hoang.nam34@demo.local",
+      "full_name": "Hoang Nam",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 35,
+      "username": "bao.chau35",
+      "password": "pbkdf2$962c23dd1e9e31087ae07ad07916b01d$bRQpJRl9Ug1ZZYf8QG/tm/hPEHyOSnKKZlxGBht4mqA=",
+      "email": "bao.chau35@demo.local",
+      "full_name": "Bảo Châu",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 36,
+      "username": "anh.thu36",
+      "password": "pbkdf2$58cc857452a1d2538aa2616db04161e1$zJTwkhgMk4leG8AKVy3WX2F3CceTgUMEQlEoXm2djKM=",
+      "email": "anh.thu36@demo.local",
+      "full_name": "Anh Thư",
       "role": "user",
       "linked_agent_id": null
     }

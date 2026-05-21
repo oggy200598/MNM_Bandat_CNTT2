@@ -155,9 +155,30 @@ router.get(
   controller.agentsList
 );
 
+router.post(
+  "/agents",
+  authenticate,
+  allowRoles("admin"),
+  controller.agentCreate
+);
+
 router.get(
   "/agents/:id",
   controller.agentDetail
+);
+
+router.put(
+  "/agents/:id",
+  authenticate,
+  allowRoles("admin"),
+  controller.agentUpdate
+);
+
+router.delete(
+  "/agents/:id",
+  authenticate,
+  allowRoles("admin"),
+  controller.agentDelete
 );
 
 router.get(
@@ -174,6 +195,18 @@ router.post(
 router.get(
   "/dashboard",
   controller.dashboard
+);
+
+router.get(
+  "/content/about",
+  controller.aboutContent
+);
+
+router.put(
+  "/content/about",
+  authenticate,
+  allowRoles("admin"),
+  controller.aboutContentUpdate
 );
 
 router.post(

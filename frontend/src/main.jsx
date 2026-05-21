@@ -13,10 +13,18 @@ import { api } from "./api.js";
    LAYOUT
 ═══════════════════════════════════════ */
 function Layout({ children }) {
-
+  const currentYear = new Date().getFullYear();
   const [user, setUser] = useState(
   JSON.parse(localStorage.getItem("user"))
 );
+  const [navSearch, setNavSearch] = useState("");
+  const [footerStats, setFooterStats] = useState({
+    property_total: 0,
+    agent_total: 0,
+    lead_total: 0,
+    featured_total: 0,
+  });
+  const [apiHealthy, setApiHealthy] = useState(true);
 
   const isAdmin =
     user?.role === "admin";
@@ -32,6 +40,49 @@ function Layout({ children }) {
       : isAgent
       ? "/dashboard"
       : "/customer-dashboard";
+  const quickLinks = [
+    { href: "/properties", icon: "bi-grid-3x3-gap", label: "Bất động sản" },
+    { href: "/nearby", icon: "bi-geo-alt", label: "Tìm quanh đây" },
+    { href: "/amenities", icon: "bi-stars", label: "Tiện ích" },
+    { href: "/compare", icon: "bi-columns-gap", label: "So sánh" },
+  ];
+  const accountLinks = user
+    ? [
+        { href: "/profile", icon: "bi-person", label: "Hồ sơ" },
+        { href: dashboardHref, icon: "bi-speedometer2", label: "Dashboard" },
+        { href: "/wishlist", icon: "bi-heart", label: "Tin đã lưu" },
+      ]
+    : [
+        { href: "/login", icon: "bi-box-arrow-in-right", label: "Đăng nhập" },
+        { href: "/register", icon: "bi-person-plus", label: "Đăng ký" },
+        { href: "/properties", icon: "bi-search", label: "Khám phá nguồn hàng" },
+      ];
+  const footerStatsItems = [
+    {
+      icon: "bi-buildings",
+      label: "Bất động sản",
+      value: footerStats.property_total.toLocaleString("vi-VN"),
+      tone: "gold",
+    },
+    {
+      icon: "bi-person-badge",
+      label: "Môi giới",
+      value: footerStats.agent_total.toLocaleString("vi-VN"),
+      tone: "gold",
+    },
+    {
+      icon: "bi-chat-left-text",
+      label: "Lead đang theo dõi",
+      value: footerStats.lead_total.toLocaleString("vi-VN"),
+      tone: "muted",
+    },
+    {
+      icon: "bi-stars",
+      label: "Tin nổi bật",
+      value: footerStats.featured_total.toLocaleString("vi-VN"),
+      tone: "muted",
+    },
+  ];
 
   useEffect(() => {
 
@@ -99,6 +150,14 @@ function Layout({ children }) {
       root.setAttribute("data-bs-theme", theme);
 
       localStorage.setItem(STORAGE, theme);
+
+      const metaThemeTag = document.querySelector('meta[name="theme-color"]');
+      if (metaThemeTag) {
+        metaThemeTag.setAttribute(
+          "content",
+          theme === "dark" ? "#0C0F1A" : "#F5F3EE"
+        );
+      }
 
       const btn =
         document.getElementById("themeToggle");
@@ -201,10 +260,14 @@ function Layout({ children }) {
   );
 };
 
-window.addEventListener(
-  "storage",
-  syncUser
-);
+    window.addEventListener(
+      "storage",
+      syncUser
+    );
+    window.addEventListener(
+      "auth-changed",
+      syncUser
+    );
 
     /* CLEANUP */
     return () => {
@@ -231,9 +294,48 @@ window.addEventListener(
   "storage",
   syncUser
 );
+      window.removeEventListener(
+  "auth-changed",
+  syncUser
+);
 
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadFooterStats() {
+      const [dashboardData, healthData] = await Promise.all([
+        api.dashboard(),
+        api.health(),
+      ]);
+
+      if (!active) return;
+
+      setFooterStats({
+        property_total: Number(dashboardData?.property_total) || 0,
+        agent_total: Number(dashboardData?.agent_total) || 0,
+        lead_total: Number(dashboardData?.lead_total) || 0,
+        featured_total: Number(dashboardData?.featured_total) || 0,
+      });
+      setApiHealthy(Boolean(healthData?.ok));
+    }
+
+    loadFooterStats();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function submitNavSearch(event) {
+    event.preventDefault();
+    const query = navSearch.trim();
+    window.location.href = query
+      ? `/properties?q=${encodeURIComponent(query)}`
+      : "/properties";
+  }
 
   return (
     <>
@@ -295,17 +397,6 @@ window.addEventListener(
                 </a>
               </li>
 
-              {user && (
-                <li className="nav-item">
-                  <a
-                    className="nav-link"
-                    href={dashboardHref}
-                  >
-                    Dashboard
-                  </a>
-                </li>
-              )}
-
               <li className="nav-item dropdown">
                 <a
                   className="nav-link dropdown-toggle"
@@ -360,17 +451,6 @@ window.addEventListener(
                     </a>
                   </li>
 
-                  {user && (
-                    <li>
-                      <a
-                        className="dropdown-item"
-                        href="/wishlist"
-                      >
-                        Tin đã lưu
-                      </a>
-                    </li>
-                  )}
-
                   {isCustomer && (
                     <>
                       <li>
@@ -393,40 +473,6 @@ window.addEventListener(
                     </>
                   )}
 
-                  {(isAgent || isAdmin) && (
-                    <>
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/properties/create"
-                        >
-                          Đăng tin mới
-                        </a>
-                      </li>
-                    </>
-                  )}
-
-                  {isAdmin && (
-                    <>
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/admin-dashboard"
-                        >
-                          Dashboard quản trị
-                        </a>
-                      </li>
-
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/admin-console"
-                        >
-                          Admin Console
-                        </a>
-                      </li>
-                    </>
-                  )}
                 </ul>
               </li>
             </ul>
@@ -436,6 +482,8 @@ window.addEventListener(
               {/* SEARCH */}
               <div className="d-none d-lg-flex align-items-center gap-2 me-2">
                 <form
+                  className="nav-search-form"
+                  onSubmit={submitNavSearch}
                   style={{
                     position: "relative",
                   }}
@@ -447,6 +495,8 @@ window.addEventListener(
                       className="nav-search"
                       type="search"
                       placeholder="Tìm theo khu vực..."
+                      value={navSearch}
+                      onChange={(event) => setNavSearch(event.target.value)}
                     />
 
                     <span className="kbd-hint">
@@ -658,6 +708,17 @@ window.addEventListener(
                 chạy trên GeoDjango & PostGIS.
               </p>
 
+              <div className="footer-hero-stats">
+                <div className="footer-mini-stat">
+                  <strong>{footerStats.property_total.toLocaleString("vi-VN")}</strong>
+                  <span>nguồn hàng đang đồng bộ</span>
+                </div>
+                <div className="footer-mini-stat">
+                  <strong>{footerStats.agent_total.toLocaleString("vi-VN")}</strong>
+                  <span>môi giới hoạt động</span>
+                </div>
+              </div>
+
               <div className="tech-stack mt-3">
                 <span className="tech-chip">
                   Django
@@ -707,43 +768,50 @@ window.addEventListener(
               </ul>
             </div>
 
+            <div className="col-lg-2 col-md-3 col-6">
+              <div className="footer-heading">
+                Tài khoản
+              </div>
+
+              <ul className="footer-links">
+                {accountLinks.map((item) => (
+                  <li key={item.href}>
+                    <a href={item.href}>
+                      <i className={`bi ${item.icon}`}></i>
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             {/* STATUS */}
             <div className="col-lg-4 col-md-6">
               <div className="footer-heading">
-                Trạng Thái
+                Vận hành hệ thống
               </div>
 
-              <div className="d-flex flex-column gap-2">
-                <div className="status-box">
+              <div className="footer-status-grid">
+                {footerStatsItems.map((item) => (
+                  <div className="status-box" key={item.label}>
+                    <span>
+                      <i className={`bi ${item.icon} me-2`}></i>
+                      {item.label}
+                    </span>
+
+                    <span className={item.tone === "gold" ? "badge-gold" : "badge-muted"}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+                <div className="status-box status-box-wide">
                   <span>
-                    <i className="bi bi-buildings me-2"></i>
-                    Bất Động Sản
-                  </span>
-
-                  <span className="badge-gold">
-                    2,450
-                  </span>
-                </div>
-
-                <div className="status-box">
-                  <span>
-                    <i className="bi bi-person-badge me-2"></i>
-                    Môi Giới
-                  </span>
-
-                  <span className="badge-gold">
-                    120
-                  </span>
-                </div>
-
-                <div className="status-box">
-                  <span>
-                    <i className="bi bi-circle-fill me-2 text-success"></i>
+                    <i className={`bi ${apiHealthy ? "bi-broadcast" : "bi-exclamation-circle"} me-2`}></i>
                     API Status
                   </span>
 
-                  <span className="text-success fw-semibold">
-                    Hoạt động
+                  <span className={`footer-live-badge ${apiHealthy ? "is-live" : "is-offline"}`}>
+                    {apiHealthy ? "Hoạt động" : "Gián đoạn"}
                   </span>
                 </div>
               </div>
@@ -753,13 +821,12 @@ window.addEventListener(
           {/* FOOTER BOTTOM */}
           <div className="footer-bottom">
             <p>
-              © 2025 GeoEstate · Django +
+              © {currentYear} GeoEstate · Django +
               PostGIS
             </p>
 
             <p>
-              Nhấn <code>⌘K</code> để tìm
-              kiếm
+              Khám phá nguồn hàng, tiện ích và điều hành dữ liệu trên cùng một nền tảng
             </p>
           </div>
         </div>

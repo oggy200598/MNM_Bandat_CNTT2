@@ -42,6 +42,9 @@ export default function RegisterPage() {
           result.user
         )
       );
+      window.dispatchEvent(
+        new Event("auth-changed")
+      );
       setMessage("Đăng ký thành công!");
       setRedirect(true);
       return;

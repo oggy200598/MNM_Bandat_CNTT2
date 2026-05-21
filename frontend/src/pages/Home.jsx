@@ -183,6 +183,7 @@ export default function Home(){
 
   const[properties,setProperties]=useState([]);
   const[loading,setLoading]=useState(true);
+  const[heroKeyword,setHeroKeyword]=useState("");
 
   const[stats,setStats]=useState({
     property_total:0,
@@ -238,6 +239,19 @@ export default function Home(){
   const topRight=restCards.slice(0,2);
   const bottomRow=restCards.slice(2,5);
 
+  function submitHeroSearch(event){
+    event.preventDefault();
+
+    const keyword = heroKeyword.trim();
+
+    if(!keyword){
+      window.location.href="/properties";
+      return;
+    }
+
+    window.location.href=`/properties?q=${encodeURIComponent(keyword)}`;
+  }
+
   return(
     <div className="home-page">
 
@@ -282,12 +296,14 @@ export default function Home(){
 
             <form
               className="hero-search"
-              onSubmit={(e)=>e.preventDefault()}
+              onSubmit={submitHeroSearch}
             >
 
               <input
                 type="text"
                 placeholder="Tìm kiếm..."
+                value={heroKeyword}
+                onChange={(e)=>setHeroKeyword(e.target.value)}
               />
 
               <button
@@ -579,6 +595,88 @@ export default function Home(){
               </div>
 
             </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <section className="home-connector-section">
+
+        <div className="container">
+
+          <div className="home-connector-grid">
+
+            <article className="home-connector-card highlight">
+
+              <div className="home-connector-icon">
+                <i className="bi bi-broadcast-pin"></i>
+              </div>
+
+              <div className="home-connector-copy">
+
+                <span className="home-connector-kicker">
+                  Dữ liệu vận hành
+                </span>
+
+                <h3>
+                  {stats.lead_total || 0}+ yêu cầu đang được theo dõi
+                </h3>
+
+                <p>
+                  Tín hiệu quan tâm từ khách hàng được cập nhật liên tục để đội ngũ bám sát nhu cầu thật.
+                </p>
+
+              </div>
+
+            </article>
+
+            <article className="home-connector-card">
+
+              <div className="home-connector-icon">
+                <i className="bi bi-stars"></i>
+              </div>
+
+              <div className="home-connector-copy">
+
+                <span className="home-connector-kicker">
+                  Điểm nhấn nhanh
+                </span>
+
+                <h3>
+                  Nguồn hàng, môi giới và bản đồ nằm trong cùng một luồng khám phá
+                </h3>
+
+                <p>
+                  Xem thống kê tổng quan phía trên, rồi đi thẳng xuống bản đồ để kiểm tra khu vực và vị trí thực tế.
+                </p>
+
+              </div>
+
+              <div className="home-connector-actions">
+                <a className="btn-geo-secondary" href="/properties">
+                  Xem nguồn hàng
+                </a>
+                <a className="btn-geo-primary" href="/nearby">
+                  Tìm quanh đây
+                </a>
+              </div>
+
+            </article>
+
+            <article className="home-connector-card compact">
+
+              <div className="home-connector-mini">
+                <strong>{stats.agent_total}+</strong>
+                <span>Môi giới đang hoạt động</span>
+              </div>
+
+              <div className="home-connector-mini">
+                <strong>{stats.property_total}+</strong>
+                <span>Tài sản sẵn sàng để khám phá trên bản đồ</span>
+              </div>
+            </article>
 
           </div>
 

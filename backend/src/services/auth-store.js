@@ -381,6 +381,34 @@ function findByUsername(
 
 }
 
+function findByEmail(
+  email
+) {
+
+  const value =
+    String(email || "")
+    .trim()
+    .toLowerCase();
+
+  if (!value) {
+    return null;
+  }
+
+  const store =
+    ensureStore();
+
+  return (
+    store.users.find(
+      (user) =>
+        String(
+          user.email || ""
+        ).toLowerCase() ===
+        value
+    ) || null
+  );
+
+}
+
 function findById(
   id
 ) {
@@ -631,14 +659,179 @@ function updateUser(
 
 }
 
+function upsertGoogleUser(
+  payload
+) {
+
+  const store =
+    ensureStore();
+
+  const googleId =
+    String(
+      payload.google_id ||
+      ""
+    ).trim();
+
+  const email =
+    String(
+      payload.email ||
+      ""
+    ).trim();
+
+  if (!googleId) {
+    throw new Error(
+      "google_id is required"
+    );
+  }
+
+  if (!email) {
+    throw new Error(
+      "email is required"
+    );
+  }
+
+  let user =
+    store.users.find(
+      (item) =>
+        String(
+          item.google_id ||
+          ""
+        ) === googleId
+    ) ||
+    store.users.find(
+      (item) =>
+        String(
+          item.email || ""
+        ).toLowerCase() ===
+        email.toLowerCase()
+    );
+
+  if (!user) {
+
+    const baseUsername =
+      String(
+        payload.username ||
+        email.split("@")[0] ||
+        "google-user"
+      )
+      .trim()
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9._-]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      ) || "google-user";
+
+    let username =
+      baseUsername;
+    let suffix = 1;
+
+    while (
+      store.users.some(
+        (item) =>
+          item.username
+            .toLowerCase() ===
+          username.toLowerCase()
+      )
+    ) {
+      suffix += 1;
+      username =
+        `${baseUsername}-${suffix}`;
+    }
+
+    user = {
+      id:
+        store.nextId++,
+      username,
+      password:
+        hashPassword(
+          crypto.randomBytes(24)
+            .toString("hex")
+        ),
+      email,
+      full_name:
+        String(
+          payload.full_name ||
+          ""
+        ).trim(),
+      role:
+        normalizeRole(
+          payload.role
+        ),
+      linked_agent_id:
+        null,
+      google_id:
+        googleId,
+      auth_provider:
+        "google",
+      avatar_url:
+        payload.avatar_url ||
+        ""
+    };
+
+    store.users.push(
+      user
+    );
+
+  } else {
+
+    user.google_id =
+      googleId;
+    user.auth_provider =
+      "google";
+
+    if (email) {
+      user.email = email;
+    }
+
+    if (
+      payload.full_name !==
+      undefined
+    ) {
+      user.full_name =
+        String(
+          payload.full_name ||
+          ""
+        ).trim();
+    }
+
+    if (
+      payload.avatar_url !==
+      undefined
+    ) {
+      user.avatar_url =
+        String(
+          payload.avatar_url ||
+          ""
+        ).trim();
+    }
+
+  }
+
+  saveStore(store);
+
+  return {
+    user:
+      publicUser(user),
+    token:
+      signToken(user)
+  };
+
+}
+
 export default {
   authenticate,
   createUser,
+  findByEmail,
   findById,
   findByUsername,
   hashPassword,
   publicUser,
   signToken,
+  upsertGoogleUser,
   updateUser,
   verifyPassword,
   verifyToken

@@ -353,6 +353,131 @@ function saveFormStore(
   );
 }
 
+function aboutContentPath() {
+  return path.join(
+    __dirname,
+    "..",
+    "..",
+    "data",
+    "about-content.json"
+  );
+}
+
+const DEFAULT_ABOUT_CONTENT = {
+  hero: {
+    eye: "Về GeoEstate",
+    title: "Nền tảng bất động sản",
+    emphasis: "thế hệ mới",
+    subtitle:
+      "Kết hợp dữ liệu không gian, WebGIS và trải nghiệm hiện đại để giúp bạn khám phá bất động sản trực quan hơn bao giờ hết."
+  },
+  stats: [
+    { number: "2,450+", label: "Bất động sản" },
+    { number: "120+", label: "Môi giới" },
+    { number: "15K+", label: "Khách tiềm năng" },
+    { number: "98%", label: "Hài lòng" }
+  ],
+  sections: [
+    {
+      id: "intro",
+      eye: "Lời mở đầu",
+      title: "Câu chuyện của",
+      accent: "GeoEstate",
+      image:
+        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1200&auto=format&fit=crop",
+      paragraphs: [
+        "Trong thời đại số hóa, việc tìm kiếm bất động sản không còn dừng lại ở những dòng tin đăng đơn giản. Người dùng cần dữ liệu trực quan, minh bạch và có thể khám phá toàn bộ khu vực xung quanh chỉ với vài cú nhấp chuột.",
+        "GeoEstate được xây dựng để giải quyết điều đó — kết hợp WebGIS, bản đồ không gian và dữ liệu bất động sản trong một nền tảng hiện đại."
+      ]
+    },
+    {
+      id: "mission",
+      eye: "Sứ mệnh",
+      title: "Mang trải nghiệm",
+      accent: "thông minh",
+      reverse: true,
+      image:
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1200&auto=format&fit=crop",
+      paragraphs: [
+        "Chúng tôi giúp khách hàng tìm kiếm bất động sản bằng dữ liệu thực tế thay vì cảm tính. Từ khoảng cách đến trường học, bệnh viện, trung tâm thương mại cho tới tiềm năng khu vực đều được hiển thị trực tiếp trên bản đồ.",
+        "GeoEstate hướng tới một thị trường minh bạch hơn, nơi mọi thông tin đều rõ ràng và dễ tiếp cận."
+      ]
+    },
+    {
+      id: "values",
+      eye: "Giá trị cốt lõi",
+      title: "Điều làm nên",
+      accent: "khác biệt",
+      image:
+        "https://images.unsplash.com/photo-1582407947304-fd86f028f716?q=80&w=1200&auto=format&fit=crop",
+      values: [
+        { icon: "🗺️", title: "WebGIS trực quan", desc: "Hiển thị bất động sản trực tiếp trên bản đồ tương tác." },
+        { icon: "📍", title: "Dữ liệu không gian", desc: "Phân tích khoảng cách và tiện ích lân cận chính xác." },
+        { icon: "⚡", title: "Hiệu năng hiện đại", desc: "Frontend React + Backend Django + PostGIS." },
+        { icon: "🔒", title: "Minh bạch", desc: "Thông tin kiểm duyệt rõ ràng và đáng tin cậy." }
+      ]
+    }
+  ],
+  timeline: [
+    { year: "2024", title: "Khởi tạo dự án", desc: "Xây dựng nền tảng bất động sản tích hợp GIS." },
+    { year: "2025", title: "Ra mắt hệ thống WebGIS", desc: "Triển khai bản đồ tương tác và tìm kiếm bán kính." },
+    { year: "2026", title: "Mở rộng CRM", desc: "Quản lý môi giới, leads và lịch hẹn." }
+  ],
+  tech: [
+    { icon: "🗄️", name: "PostGIS", desc: "Cơ sở dữ liệu không gian" },
+    { icon: "🐍", name: "Django", desc: "Backend framework" },
+    { icon: "⚛️", name: "React", desc: "Frontend hiện đại" },
+    { icon: "🗺️", name: "Leaflet", desc: "Bản đồ tương tác" }
+  ],
+  cta: {
+    eye: "Sẵn sàng chưa?",
+    title: "Khám phá bất động sản",
+    emphasis: "ngay hôm nay",
+    desc: "Hàng nghìn bất động sản đang chờ bạn khám phá trên hệ thống WebGIS."
+  }
+};
+
+function ensureAboutContentStore() {
+  const target = aboutContentPath();
+
+  fs.mkdirSync(path.dirname(target), {
+    recursive: true
+  });
+
+  if (!fs.existsSync(target)) {
+    fs.writeFileSync(
+      target,
+      JSON.stringify(
+        DEFAULT_ABOUT_CONTENT,
+        null,
+        2
+      ),
+      "utf8"
+    );
+  }
+
+  return JSON.parse(
+    fs.readFileSync(
+      target,
+      "utf8"
+    )
+  );
+}
+
+function saveAboutContentStore(
+  content
+) {
+  fs.writeFileSync(
+    aboutContentPath(),
+    JSON.stringify(
+      content,
+      null,
+      2
+    ),
+    "utf8"
+  );
+}
+
 function summarizeAgentReviews(
   agentId
 ) {
@@ -582,6 +707,15 @@ async function listProperties(
     );
   }
 
+  if (query.district) {
+    values.push(
+      `%${String(query.district).trim()}%`
+    );
+    where.push(
+      `p.address ILIKE $${values.length}`
+    );
+  }
+
   if (
     query.priceMin !==
       undefined &&
@@ -658,6 +792,9 @@ async function listProperties(
       : query.sort ===
         "area_asc"
       ? "p.area ASC NULLS LAST"
+      : query.sort ===
+        "area_desc"
+      ? "p.area DESC NULLS LAST"
       : "p.is_featured DESC, p.created_at DESC";
 
   values.push(limit, offset);
@@ -738,6 +875,15 @@ async function listPropertiesPage(
     );
   }
 
+  if (query.district) {
+    values.push(
+      `%${String(query.district).trim()}%`
+    );
+    where.push(
+      `p.address ILIKE $${values.length}`
+    );
+  }
+
   if (
     query.priceMin !==
       undefined &&
@@ -814,6 +960,9 @@ async function listPropertiesPage(
       : query.sort ===
         "area_asc"
       ? "p.area ASC NULLS LAST"
+      : query.sort ===
+        "area_desc"
+      ? "p.area DESC NULLS LAST"
       : "p.is_featured DESC, p.created_at DESC";
 
   const whereClause =
@@ -1222,18 +1371,54 @@ async function updatePropertyStage(
 async function deleteProperty(
   id
 ) {
-  const result =
-    await pool.query(
-      `
-      DELETE
-      FROM properties_property
-      WHERE id=$1
-      RETURNING id
-      `,
-      [id]
-    );
+  const client =
+    await pool.connect();
 
-  return result.rowCount > 0;
+  try {
+    await client.query("BEGIN");
+
+    const dependentTables = [
+      "accounts_agentreview",
+      "leads_appointment",
+      "properties_compare",
+      "properties_property_amenities",
+      "properties_property_image",
+      "properties_propertychangelog",
+      "properties_propertyimage",
+      "properties_review",
+      "properties_wishlist",
+    ];
+
+    for (const tableName of dependentTables) {
+      await client.query(
+        `
+        DELETE
+        FROM ${tableName}
+        WHERE property_id = $1
+        `,
+        [id]
+      );
+    }
+
+    const result =
+      await client.query(
+        `
+        DELETE
+        FROM properties_property
+        WHERE id = $1
+        RETURNING id
+        `,
+        [id]
+      );
+
+    await client.query("COMMIT");
+    return result.rowCount > 0;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function createPropertyImage(
@@ -1715,7 +1900,9 @@ async function listAgents() {
         id,
         name,
         phone,
-        email
+        email,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng
       FROM accounts_agent
       ORDER BY id DESC
       `
@@ -1738,7 +1925,9 @@ async function getAgentById(
         id,
         name,
         phone,
-        email
+        email,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng
       FROM accounts_agent
       WHERE id = $1
       `,
@@ -1774,6 +1963,142 @@ async function getAgentById(
     ...summarizeAgentReviews(id),
     properties: assigned
   };
+}
+
+async function createAgent(
+  payload
+) {
+  if (!payload.name) {
+    throw new Error(
+      "name is required"
+    );
+  }
+
+  const result =
+    await pool.query(
+      `
+      INSERT INTO accounts_agent
+      (
+        name,
+        phone,
+        email,
+        location,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        ${pointSql("$5", "$4")},
+        NOW(),
+        NOW()
+      )
+      RETURNING id
+      `,
+      [
+        String(payload.name).trim(),
+        payload.phone || null,
+        payload.email || null,
+        payload.lat ?? DEFAULT_LAT,
+        payload.lng ?? DEFAULT_LNG
+      ]
+    );
+
+  return getAgentById(
+    result.rows[0].id
+  );
+}
+
+async function updateAgent(
+  id,
+  payload
+) {
+  const current =
+    await pool.query(
+      `
+      SELECT
+        id,
+        name,
+        phone,
+        email,
+        ST_Y(location::geometry) AS lat,
+        ST_X(location::geometry) AS lng
+      FROM accounts_agent
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+  if (
+    !current.rows[0]
+  ) {
+    return null;
+  }
+
+  const row =
+    current.rows[0];
+
+  await pool.query(
+    `
+    UPDATE accounts_agent
+    SET
+      name = $1,
+      phone = $2,
+      email = $3,
+      location = ${pointSql("$5", "$4")},
+      updated_at = NOW()
+    WHERE id = $6
+    `,
+    [
+      String(
+        payload.name ??
+          row.name
+      ).trim(),
+      payload.phone ??
+        row.phone ??
+        null,
+      payload.email ??
+        row.email ??
+        null,
+      payload.lat ??
+        row.lat ??
+        DEFAULT_LAT,
+      payload.lng ??
+        row.lng ??
+        DEFAULT_LNG,
+      id
+    ]
+  );
+
+  return getAgentById(id);
+}
+
+async function deleteAgent(
+  id
+) {
+  await pool.query(
+    `
+    UPDATE properties_property
+    SET agent_id = NULL
+    WHERE agent_id = $1
+    `,
+    [id]
+  );
+
+  const result =
+    await pool.query(
+      `
+      DELETE
+      FROM accounts_agent
+      WHERE id = $1
+      RETURNING id
+      `,
+      [id]
+    );
+
+  return result.rowCount > 0;
 }
 
 async function getDashboardStats() {
@@ -2357,6 +2682,48 @@ async function updateProfile(
   );
 }
 
+async function getAboutContent() {
+  return ensureAboutContentStore();
+}
+
+async function updateAboutContent(
+  payload = {}
+) {
+  const current =
+    ensureAboutContentStore();
+
+  const next = {
+    hero: {
+      ...current.hero,
+      ...(payload.hero || {})
+    },
+    stats:
+      Array.isArray(payload.stats)
+        ? payload.stats
+        : current.stats,
+    sections:
+      Array.isArray(payload.sections)
+        ? payload.sections
+        : current.sections,
+    timeline:
+      Array.isArray(payload.timeline)
+        ? payload.timeline
+        : current.timeline,
+    tech:
+      Array.isArray(payload.tech)
+        ? payload.tech
+        : current.tech,
+    cta: {
+      ...current.cta,
+      ...(payload.cta || {})
+    }
+  };
+
+  saveAboutContentStore(next);
+
+  return next;
+}
+
 async function listTasks() {
   const result =
     await pool.query(
@@ -2422,6 +2789,9 @@ export default {
   listNearbyAmenities,
   listAgents,
   getAgentById,
+  createAgent,
+  updateAgent,
+  deleteAgent,
   getDashboardStats,
   createLead,
   createAppointment,
@@ -2444,6 +2814,8 @@ export default {
   register,
   getCurrentUser,
   updateProfile,
+  getAboutContent,
+  updateAboutContent,
   listTasks,
   createTask,
   deleteTask

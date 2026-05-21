@@ -3,42 +3,16 @@ import {
   normalizeProperty,
   formatPrice
 } from "../../api";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import usePropertyDetail
   from "../../hooks/usePropertyDetail";
 
 import PropertyMiniCard
   from "../../components/property/PropertyMiniCard";
+import { sanitizeRichHtml } from "../../utils/richText";
 import "../../App.css";
-
-const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-
-function loadStyle(href, id) {
-  if (document.querySelector(`link[data-openclaw-id="${id}"]`)) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    link.dataset.openclawId = id;
-    link.onload = () => resolve();
-    link.onerror = reject;
-    document.head.appendChild(link);
-  });
-}
-
-function loadScript(src, id) {
-  if (document.querySelector(`script[data-openclaw-id="${id}"]`)) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.dataset.openclawId = id;
-    script.onload = () => resolve();
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
 
 function ImageUploadForm({ propertyId, onUploaded }) {
   const [file, setFile] = useState(null);
@@ -123,29 +97,29 @@ function modeLabel(mode) {
 function RouteMap({ destination, origin, routeGeometry }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const [mapInstance, setMapInstance] = useState(null);
   const layersRef = useRef({ markers: [], route: null });
 
   useEffect(() => {
     let disposed = false;
     let localMap = null;
 
-    async function boot() {
-      await loadStyle(LEAFLET_CSS, "leaflet-css");
-      await loadScript(LEAFLET_JS, "leaflet-js");
-
-      if (disposed || !containerRef.current || !window.L || mapRef.current || !destination) {
+    function boot() {
+      if (disposed || !containerRef.current || mapRef.current || !destination) {
         return;
       }
 
-      localMap = window.L.map(containerRef.current, { scrollWheelZoom: true }).setView([destination.lat, destination.lng], 14);
-      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      localMap = L.map(containerRef.current, { scrollWheelZoom: true }).setView([destination.lat, destination.lng], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(localMap);
-      
+
       mapRef.current = localMap;
-      setMapInstance(localMap);
+      localMap.whenReady(() => {
+        setTimeout(() => {
+          localMap?.invalidateSize();
+        }, 0);
+      });
     }
 
     boot();
@@ -156,12 +130,12 @@ function RouteMap({ destination, origin, routeGeometry }) {
         mapRef.current.remove();
         mapRef.current = null;
       }
-      setMapInstance(null);
     };
-  }, [destination]);
+  }, [destination?.lat, destination?.lng]);
 
   useEffect(() => {
-    if (!mapInstance || !window.L || !destination) return;
+    const mapInstance = mapRef.current;
+    if (!mapInstance || !destination) return;
 
     layersRef.current.markers.forEach((layer) => layer.remove());
     if (layersRef.current.route) {
@@ -169,20 +143,32 @@ function RouteMap({ destination, origin, routeGeometry }) {
     }
 
     const markers = [];
-    const destinationMarker = window.L.marker([destination.lat, destination.lng]).bindPopup("Bất động sản đích");
+    const destinationMarker = L.circleMarker([destination.lat, destination.lng], {
+      radius: 9,
+      color: "#b3872a",
+      weight: 3,
+      fillColor: "#f5e3b5",
+      fillOpacity: 1,
+    }).bindPopup("Bất động sản đích");
     destinationMarker.addTo(mapInstance);
     markers.push(destinationMarker);
 
     if (origin) {
-      const originMarker = window.L.marker([origin.lat, origin.lng]).bindPopup("Điểm xuất phát");
+      const originMarker = L.circleMarker([origin.lat, origin.lng], {
+        radius: 8,
+        color: "#2458a6",
+        weight: 3,
+        fillColor: "#dce8fb",
+        fillOpacity: 1,
+      }).bindPopup("Điểm xuất phát");
       originMarker.addTo(mapInstance);
       markers.push(originMarker);
     }
 
-    let bounds = window.L.latLngBounds([[destination.lat, destination.lng]]);
+    let bounds = L.latLngBounds([[destination.lat, destination.lng]]);
 
     if (routeGeometry?.coordinates?.length) {
-      const line = window.L.polyline(
+      const line = L.polyline(
         routeGeometry.coordinates.map(([lng, lat]) => [lat, lng]),
         {
           color: "#d4af37",
@@ -194,7 +180,7 @@ function RouteMap({ destination, origin, routeGeometry }) {
       layersRef.current.route = line;
       bounds = line.getBounds();
     } else if (origin) {
-      bounds = window.L.latLngBounds([
+      bounds = L.latLngBounds([
         [origin.lat, origin.lng],
         [destination.lat, destination.lng],
       ]);
@@ -205,7 +191,13 @@ function RouteMap({ destination, origin, routeGeometry }) {
     }
 
     layersRef.current.markers = markers;
-  }, [mapInstance, destination, origin, routeGeometry]);
+  }, [
+    destination?.lat,
+    destination?.lng,
+    origin?.lat,
+    origin?.lng,
+    routeGeometry,
+  ]);
 
   return <div className="detail-route-map" ref={containerRef} />;
 }
@@ -221,6 +213,7 @@ export default function PropertyDetailPage() {
   const [routeMessage, setRouteMessage] = useState("");
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeData, setRouteData] = useState(null);
+  const [routeRequestKey, setRouteRequestKey] = useState(0);
   const p = normalizeProperty(property);
   const images = property?.images?.length ? property.images : [{ image: p.imageUrl, caption: p.title, is_primary: true }];
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -258,12 +251,21 @@ export default function PropertyDetailPage() {
   const agentRating = property?.agent?.rating || 5;
   const ratingCount = property?.agent?.rating_count || 0;
   const recentReviews = property?.agent?.reviews || [];
-  const destination = Number.isFinite(Number(property?.lat)) && Number.isFinite(Number(property?.lng))
-    ? { lat: Number(property.lat), lng: Number(property.lng) }
-    : null;
-  const directionsUrl = destination
-    ? buildDirectionsUrl(destination, routeOrigin, routeMode)
-    : null;
+  const destination = useMemo(() => {
+    if (!Number.isFinite(Number(property?.lat)) || !Number.isFinite(Number(property?.lng))) {
+      return null;
+    }
+
+    return {
+      lat: Number(property.lat),
+      lng: Number(property.lng),
+    };
+  }, [property?.lat, property?.lng]);
+
+  const directionsUrl = useMemo(
+    () => (destination ? buildDirectionsUrl(destination, routeOrigin, routeMode) : null),
+    [destination, routeOrigin, routeMode]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -338,7 +340,7 @@ export default function PropertyDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [destination, routeOrigin, routeMode]);
+  }, [destination, routeOrigin, routeMode, routeRequestKey]);
 
   async function submitReview() {
     const currentUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -415,8 +417,9 @@ export default function PropertyDetailPage() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
+        setRouteRequestKey((prev) => prev + 1);
         setRouteLoading(false);
-        setRouteMessage("Đã lấy vị trí hiện tại. Bạn có thể mở chỉ đường ngay.");
+        setRouteMessage("Đã lấy vị trí hiện tại. Đang tìm tuyến đường trên web...");
       },
       () => {
         setRouteLoading(false);
@@ -427,6 +430,21 @@ export default function PropertyDetailPage() {
         timeout: 10000,
       }
     );
+  }
+
+  function findRouteOnWeb() {
+    if (!destination) {
+      setRouteMessage("Bất động sản này chưa có dữ liệu vị trí để tìm đường.");
+      return;
+    }
+
+    if (routeOrigin) {
+      setRouteMessage("Đang cập nhật tuyến đường trên web...");
+      setRouteRequestKey((prev) => prev + 1);
+      return;
+    }
+
+    useCurrentLocation();
   }
 
   return (
@@ -454,7 +472,16 @@ export default function PropertyDetailPage() {
               <div><strong>{property?.location_score ?? "8.8"}</strong><span>Điểm vị trí</span></div>
             </div>
             <h3>Mô tả</h3>
-            <p className="long-text">{p.description || property?.description || "Thông tin đang được cập nhật từ backend Node.js."}</p>
+            <div
+              className="long-text rich-text-content"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeRichHtml(
+                  p.description ||
+                  property?.description ||
+                  "Thông tin đang được cập nhật từ backend Node.js."
+                ),
+              }}
+            />
           </div>
           <div className="extra-card">
             <h3>Ảnh bất động sản</h3>
@@ -467,7 +494,7 @@ export default function PropertyDetailPage() {
             <div className="mini-grid media-grid">
               {images.map((img, index) => (
                 <article className="mini-property-card" key={`${img.id || index}-${index}`}>
-                  <div className="mini-media" style={{ backgroundImage: `url(${img.image})` }}><span>{img.is_primary ? "Ảnh chính" : `Ảnh ${index + 1}`}</span></div>
+                  <div className="mini-media" style={{ backgroundImage: `url(${img.image})` }} />
                   <div className="mini-content">
                     <p>{img.caption || p.title}</p>
                     {canManageImages && (
@@ -511,6 +538,9 @@ export default function PropertyDetailPage() {
                 <button type="button" className="btn-geo-secondary" onClick={useCurrentLocation} disabled={routeLoading}>
                   {routeLoading ? "Đang lấy vị trí..." : "Dùng vị trí hiện tại"}
                 </button>
+                <button type="button" className="btn-geo-primary" onClick={findRouteOnWeb} disabled={!destination || routeLoading}>
+                  Tìm tuyến trên web
+                </button>
                 <button type="button" className="btn-geo-primary" onClick={openDirections} disabled={!destination}>
                   Mở Google Maps
                 </button>
@@ -537,6 +567,11 @@ export default function PropertyDetailPage() {
                 </div>
               )}
               {routeMessage && <p className="muted-line">{routeMessage}</p>}
+              {!routeOrigin && (
+                <div className="route-inline-hint">
+                  Bấm <strong>Tìm tuyến trên web</strong> để lấy vị trí hiện tại và vẽ đường đi ngay trên bản đồ.
+                </div>
+              )}
               <RouteMap destination={destination} origin={routeOrigin} routeGeometry={routeData?.geometry || null} />
             </div>
           </div>
@@ -562,8 +597,12 @@ export default function PropertyDetailPage() {
       Lưu tin
     </a>
 
+    <button className="btn-geo-secondary full" type="button" onClick={findRouteOnWeb} disabled={!destination || routeLoading}>
+      Tìm đường trên web
+    </button>
+
     <button className="btn-geo-secondary full" type="button" onClick={openDirections} disabled={!destination}>
-      Tìm đường
+      Mở Google Maps
     </button>
   </div>
 

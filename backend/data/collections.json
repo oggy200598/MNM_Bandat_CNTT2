@@ -3,14 +3,413 @@
     "guest": [],
     "user:7": [
       1
+    ],
+    "user:3": [
+      "401",
+      "453",
+      "313",
+      "445",
+      "312"
+    ],
+    "user:4": [
+      "416",
+      "404",
+      "394",
+      "405",
+      "412",
+      "403",
+      "396",
+      "351"
+    ],
+    "user:5": [
+      "433",
+      "424",
+      "406",
+      "356"
+    ],
+    "user:6": [
+      "407",
+      "440",
+      "399",
+      "375"
+    ],
+    "user:9": [
+      "453",
+      "362",
+      "323"
+    ],
+    "user:18": [
+      "424",
+      "367",
+      "396",
+      "388",
+      "362"
+    ],
+    "user:19": [
+      "419",
+      "408",
+      "364",
+      "421",
+      "321",
+      "380"
+    ],
+    "user:20": [
+      "418",
+      "337",
+      "318"
+    ],
+    "user:21": [
+      "314",
+      "330",
+      "327",
+      "390",
+      "313",
+      "371",
+      "388",
+      "352"
+    ],
+    "user:22": [
+      "322",
+      "315",
+      "354",
+      "404",
+      "400",
+      "428"
+    ],
+    "user:23": [
+      "381",
+      "386",
+      "362",
+      "390"
+    ],
+    "user:24": [
+      "381",
+      "373",
+      "336",
+      "411",
+      "410"
     ]
   },
   "compare": {
     "user:7": [],
-    "guest": []
+    "guest": [],
+    "user:3": [
+      "383",
+      "362"
+    ],
+    "user:4": [
+      "446",
+      "413"
+    ],
+    "user:5": [
+      "400",
+      "330"
+    ],
+    "user:6": [
+      "422",
+      "417"
+    ],
+    "user:9": [
+      "444",
+      "453",
+      "320"
+    ],
+    "user:18": [
+      "385",
+      "415"
+    ],
+    "user:19": [
+      "393",
+      "399"
+    ],
+    "user:20": [
+      "392",
+      "386"
+    ],
+    "user:21": [
+      "323",
+      "326"
+    ],
+    "user:22": [
+      "338",
+      "448"
+    ],
+    "user:23": [
+      "337",
+      "365"
+    ],
+    "user:24": [
+      "341",
+      "416"
+    ],
+    "user:1": []
   },
   "savedSearches": {
-    "guest": []
+    "guest": [],
+    "user:3": [
+      {
+        "id": "2",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-04-30T14:47:21.069Z"
+      },
+      {
+        "id": "3",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-04-14T02:33:16.886Z"
+      }
+    ],
+    "user:4": [
+      {
+        "id": "4",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-04-18T00:19:58.174Z"
+      },
+      {
+        "id": "5",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-04-18T07:22:58.827Z"
+      }
+    ],
+    "user:5": [
+      {
+        "id": "6",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-03-13T07:18:22.705Z"
+      },
+      {
+        "id": "7",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-04-25T17:54:52.808Z"
+      }
+    ],
+    "user:6": [
+      {
+        "id": "8",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-03-09T19:37:06.809Z"
+      },
+      {
+        "id": "9",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-03-26T20:05:36.157Z"
+      }
+    ],
+    "user:9": [
+      {
+        "id": "10",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-04-13T21:21:35.801Z"
+      },
+      {
+        "id": "11",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-05-17T17:54:01.810Z"
+      }
+    ],
+    "user:18": [
+      {
+        "id": "12",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-02-19T22:38:45.605Z"
+      },
+      {
+        "id": "13",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-05-10T00:35:18.945Z"
+      }
+    ],
+    "user:19": [
+      {
+        "id": "14",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-03-30T07:15:49.234Z"
+      },
+      {
+        "id": "15",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-05-02T12:52:44.774Z"
+      }
+    ],
+    "user:20": [
+      {
+        "id": "16",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-05-16T03:35:16.902Z"
+      },
+      {
+        "id": "17",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-04-02T17:20:01.623Z"
+      }
+    ],
+    "user:21": [
+      {
+        "id": "18",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-04-24T07:17:37.889Z"
+      },
+      {
+        "id": "19",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-05-12T15:38:09.202Z"
+      }
+    ],
+    "user:22": [
+      {
+        "id": "20",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-05-15T10:42:40.503Z"
+      },
+      {
+        "id": "21",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-05-11T03:41:02.983Z"
+      }
+    ],
+    "user:23": [
+      {
+        "id": "22",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-05-02T21:23:09.334Z"
+      },
+      {
+        "id": "23",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-03-27T19:47:50.154Z"
+      }
+    ],
+    "user:24": [
+      {
+        "id": "24",
+        "name": "Căn hộ gần trung tâm",
+        "filters": {
+          "q": "trung tâm",
+          "type": "apartment",
+          "minPrice": 2500000000,
+          "maxPrice": 9000000000
+        },
+        "created_at": "2026-03-09T19:33:33.838Z"
+      },
+      {
+        "id": "25",
+        "name": "Đất nền đầu tư",
+        "filters": {
+          "type": "land",
+          "listing_status": "active"
+        },
+        "created_at": "2026-03-25T22:15:10.171Z"
+      }
+    ]
   },
-  "nextSavedSearchId": 2
+  "nextSavedSearchId": 26
 }

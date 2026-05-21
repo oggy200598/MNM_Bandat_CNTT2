@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { api, normalizeProperty } from "../api";
 import "../App.css";
+import { stripHtmlTags } from "../utils/richText";
 
 const fallbackProperties = [
   {
@@ -47,6 +49,49 @@ const fallbackAmenities = [
   { id: 3, type: "Công viên", name: "Công viên Tao Đàn", distance_km: 0.95 },
   { id: 4, type: "Siêu thị", name: "Co.opmart Cống Quỳnh", distance_km: 1.7 },
 ];
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Mới nhất" },
+  { value: "price_asc", label: "Giá tăng dần" },
+  { value: "price_desc", label: "Giá giảm dần" },
+  { value: "area_asc", label: "Diện tích tăng dần" },
+];
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildPropertyPopup(item, index = 0) {
+  const property = normalizeProperty(item, index);
+  const title = escapeHtml(property.title || property.name || "Bất động sản");
+  const address = escapeHtml(property.address || "Đang cập nhật địa chỉ");
+  const priceText = escapeHtml(property.priceText || "Liên hệ");
+  const typeText = escapeHtml(property.typeText || "Bất động sản");
+  const imageUrl = escapeHtml(property.imageUrl);
+  const detailHref = `/property-detail/${property.id}`;
+
+  return `
+    <a class="map-property-popup" href="${detailHref}">
+      <div class="map-property-popup__thumb">
+        <img src="${imageUrl}" alt="${title}" loading="lazy" />
+      </div>
+      <div class="map-property-popup__body">
+        <div class="map-property-popup__top">
+          <span class="map-property-popup__type">${typeText}</span>
+          <strong class="map-property-popup__price">${priceText}</strong>
+        </div>
+        <h4 class="map-property-popup__title">${title}</h4>
+        <p class="map-property-popup__address">${address}</p>
+        <span class="map-property-popup__cta">Xem chi tiết</span>
+      </div>
+    </a>
+  `;
+}
 
 function PageHero({ eyebrow, title, desc, actions }) {
   return (
@@ -103,10 +148,29 @@ function boundsToBbox(bounds) {
   return [west, south, east, north].join(',');
 }
 
-function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', onBoundsChange, heatMode = false }) {
+async function fetchPlaceSuggestions(query, limit = 5) {
+  const keyword = String(query || "").trim();
+  if (!keyword) return [];
+
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=${limit}&q=${encodeURIComponent(keyword)}`
+  );
+  const results = await response.json();
+  if (!Array.isArray(results)) return [];
+
+  return results.map((item) => ({
+    label: item.display_name,
+    lat: Number(item.lat),
+    lng: Number(item.lon),
+  }));
+}
+
+function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', onBoundsChange, heatMode = false, radiusKm = 0, showRadius = false }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const layersRef = useRef({ markers: null, heat: null });
+  const layersRef = useRef({ markers: null, heat: null, radius: null, centerMarker: null });
+  const suppressMoveRef = useRef(false);
+  const previousCenterRef = useRef(null);
 
   useEffect(() => {
     let disposed = false;
@@ -124,7 +188,13 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
         attribution: '&copy; OpenStreetMap contributors',
       }).addTo(map);
       mapRef.current = map;
-      const sync = () => onBoundsChange?.(boundsToBbox(map.getBounds()));
+      const sync = () => {
+        if (suppressMoveRef.current) {
+          suppressMoveRef.current = false;
+          return;
+        }
+        onBoundsChange?.(boundsToBbox(map.getBounds()));
+      };
       map.on('moveend', sync);
       sync();
     }
@@ -144,15 +214,20 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
     const prev = layersRef.current;
     if (prev.markers) prev.markers.remove();
     if (prev.heat) prev.heat.remove();
+    if (prev.radius) prev.radius.remove();
+    if (prev.centerMarker) prev.centerMarker.remove();
 
     const cluster = window.L.markerClusterGroup ? window.L.markerClusterGroup() : window.L.layerGroup();
     const heatPoints = [];
-    (items || []).forEach((item) => {
+    (items || []).forEach((item, index) => {
       const lat = Number(item.lat ?? item.latitude);
       const lng = Number(item.lng ?? item.lon ?? item.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
       const marker = window.L.marker([lat, lng]);
-      marker.bindPopup(`<strong>${item.title || item.name || 'Bất động sản'}</strong><br/>${item.address || ''}`);
+      marker.bindPopup(buildPropertyPopup(item, index), {
+        className: "map-property-popup-shell",
+        maxWidth: 300,
+      });
       cluster.addLayer(marker);
       heatPoints.push([lat, lng, 1]);
     });
@@ -164,13 +239,67 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
       heat.addTo(map);
       layersRef.current.heat = heat;
     }
-  }, [items, heatMode]);
+
+    if (showRadius && Number.isFinite(center?.lat) && Number.isFinite(center?.lng) && radiusKm > 0) {
+      const centerMarker = window.L.circleMarker([center.lat, center.lng], {
+        radius: 7,
+        color: '#c59d4f',
+        weight: 2,
+        fillColor: '#ffffff',
+        fillOpacity: 1,
+      }).addTo(map);
+      centerMarker.bindPopup('Tâm tìm kiếm');
+
+      const radius = window.L.circle([center.lat, center.lng], {
+        radius: radiusKm * 1000,
+        color: '#c59d4f',
+        weight: 2,
+        fillColor: '#d4b06a',
+        fillOpacity: 0.14,
+      }).addTo(map);
+
+      layersRef.current.centerMarker = centerMarker;
+      layersRef.current.radius = radius;
+      suppressMoveRef.current = true;
+      map.fitBounds(radius.getBounds(), { padding: [24, 24] });
+      previousCenterRef.current = {
+        lat: center.lat,
+        lng: center.lng,
+      };
+    } else if (Number.isFinite(center?.lat) && Number.isFinite(center?.lng)) {
+      const previousCenter = previousCenterRef.current;
+      const centerChanged =
+        !previousCenter ||
+        Math.abs(previousCenter.lat - center.lat) > 0.000001 ||
+        Math.abs(previousCenter.lng - center.lng) > 0.000001;
+
+      if (!centerChanged) {
+        return;
+      }
+
+      suppressMoveRef.current = true;
+      map.setView([center.lat, center.lng], map.getZoom());
+      previousCenterRef.current = {
+        lat: center.lat,
+        lng: center.lng,
+      };
+    }
+  }, [items, heatMode, center?.lat, center?.lng, radiusKm, showRadius]);
 
   return <div className="gis-map-box leaflet-box" style={{ height }}><div ref={containerRef} className="leaflet-map" /><div className="gis-map-overlay" /><div className="gis-map-chip">{chip}</div></div>;
 }
 
 
-function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlistActive }) {
+function PropertyCard({
+  property,
+  compact = false,
+  onDelete,
+  onWishlist,
+  wishlistActive,
+  canManageStatus = false,
+  onStageChange,
+  canDelete = false,
+}) {
   const p = normalizeProperty(property);
   return (
     <article className="listing-card">
@@ -181,12 +310,34 @@ function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlis
         <div className="listing-price">{p.priceText}</div>
         <h3>{p.title}</h3>
         <p className="listing-address">📍 {p.address}</p>
-        {!compact && <p className="listing-desc">{p.description || p.desc}</p>}
+        {!compact && <p className="listing-desc">{stripHtmlTags(p.description || p.desc)}</p>}
         <div className="listing-meta">
           <span><strong>{p.area}</strong> m²</span>
           <span><strong>{p.typeText}</strong></span>
           <span><strong>{p.agentName}</strong></span>
         </div>
+        {canManageStatus && onStageChange && (
+          <div className="property-status-admin-row">
+            {[
+              { value: "active", label: "Đang bán" },
+              { value: "sold", label: "Đã bán" },
+              { value: "hidden", label: "Đã ẩn" },
+            ].map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={`status-mini-chip ${property.listing_status === item.value ? "active" : ""}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onStageChange(property, item.value);
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="listing-actions">
 
   <a
@@ -206,7 +357,9 @@ function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlis
   <button
     type="button"
     className="btn-geo-secondary"
-    onClick={() => {
+    onClick={(event) => {
+      event.preventDefault();
+      event.stopPropagation();
 
       if (!wishlistActive) {
         window.location.href = "/wishlist";
@@ -223,11 +376,15 @@ function PropertyCard({ property, compact = false, onDelete, onWishlist, wishlis
 )}
 
 
-  {onDelete && (
+  {canDelete && onDelete && (
     <button
       type="button"
       className="btn-geo-secondary danger-btn"
-      onClick={() => onDelete(property)}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onDelete(property);
+      }}
     >
       Xóa
     </button>
@@ -291,13 +448,24 @@ function FilterPanel({ filters, onChange, onSubmit, onReset }) {
 
         <div className="filter-section">
           <label>Trạng thái</label>
-          <select value={filters.status} onChange={(e) => onChange('status', e.target.value)}>
-            <option value="">Tất cả</option>
-            <option value="active">Đang bán</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="sold">Đã bán</option>
-            <option value="hidden">Ẩn</option>
-          </select>
+          <div className="chip-group">
+            {[
+              { value: "", label: "Tất cả" },
+              { value: "active", label: "Đang bán" },
+              { value: "sold", label: "Đã bán" },
+              { value: "hidden", label: "Đã ẩn" },
+              { value: "pending", label: "Chờ duyệt" },
+            ].map((item) => (
+              <button
+                key={item.value || "all-status"}
+                type="button"
+                className={`chip ${filters.status === item.value ? "active" : ""}`}
+                onClick={() => onChange("status", item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button type="submit" className="apply-filter">Áp dụng bộ lọc</button>
@@ -353,7 +521,12 @@ function PaginationControls({ pagination, onPageChange, loading }) {
 }
 
 export function PropertyListPage() {
+  const location = useLocation();
+  const resultsRef = useRef(null);
+  const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  const isAdmin = currentUser?.role === "admin";
   const [items, setItems] = useState(fallbackProperties);
+  const [actionMessage, setActionMessage] = useState("");
   const [mapData, setMapData] = useState({ items: [], center: { lat: 10.7769, lng: 106.7009 } });
   const [loading, setLoading] = useState(false);
   const [wishlistIds, setWishlistIds] = useState([]);
@@ -362,7 +535,19 @@ export function PropertyListPage() {
   const [heatMode, setHeatMode] = useState(false);
   const [bbox, setBbox] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 12, totalItems: fallbackProperties.length, totalPages: 1, hasPrev: false, hasNext: false });
-  const [filters, setFilters] = useState({ type: "", status: "", q: "", priceMin: "", priceMax: "", areaMin: "", areaMax: "", sort: "newest" });
+  const [filters, setFilters] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      type: params.get("type") || "",
+      status: params.get("status") || "",
+      q: params.get("q") || "",
+      priceMin: params.get("priceMin") || "",
+      priceMax: params.get("priceMax") || "",
+      areaMin: params.get("areaMin") || "",
+      areaMax: params.get("areaMax") || "",
+      sort: params.get("sort") || "newest",
+    };
+  });
 
   const syncCollections = async () => {
     const token = api.getToken();
@@ -439,16 +624,26 @@ export function PropertyListPage() {
 useEffect(() => {
 
   const init = async () => {
+    const params = new URLSearchParams(location.search);
+    const nextFilters = {
+      type: params.get("type") || "",
+      status: params.get("status") || "",
+      q: params.get("q") || "",
+      priceMin: params.get("priceMin") || "",
+      priceMax: params.get("priceMax") || "",
+      areaMin: params.get("areaMin") || "",
+      areaMax: params.get("areaMax") || "",
+      sort: params.get("sort") || "newest",
+    };
 
-    await loadItems();
-
+    setFilters(nextFilters);
+    await loadItems(nextFilters, "", 1);
     await syncCollections();
-
   };
 
   init();
 
-}, []);
+}, [location.search]);
 
   const handleChange = (field, value) => {
     const updated = {
@@ -458,7 +653,19 @@ useEffect(() => {
 
     setFilters(updated);
   };
-  const handleSubmit = (event) => { event.preventDefault(); loadItems(filters, bbox, 1); };
+  const scrollToResults = () => {
+    window.requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await loadItems(filters, bbox, 1);
+    scrollToResults();
+  };
   const handleReset = () => {
     const cleared = { type: "", status: "", q: "", priceMin: "", priceMax: "", areaMin: "", areaMax: "", sort: "newest" };
     setFilters(cleared);
@@ -466,9 +673,25 @@ useEffect(() => {
     loadItems(cleared, '', 1);
   };
   const handleDelete = async (property) => {
-    if (!window.confirm(`Xóa tin "${property.title}"?`)) return;
+    setActionMessage("");
     const result = await api.deleteProperty(property.id);
-    if (result?.ok) setItems((prev) => prev.filter((item) => item.id !== property.id));
+    if (result?.ok) {
+      setItems((prev) => prev.filter((item) => item.id !== property.id));
+      setActionMessage(`Đã xóa tin "${property.title}".`);
+      return;
+    }
+    setActionMessage(`Chưa xóa được tin "${property.title}".`);
+  };
+  const handleStageChange = async (property, nextStatus) => {
+    if (property.listing_status === nextStatus) return;
+    setActionMessage("");
+    const result = await api.updatePropertyStage(property.id, { listing_status: nextStatus });
+    if (result?.id) {
+      setActionMessage(`Đã chuyển "${property.title}" sang ${nextStatus === "active" ? "Đang bán" : nextStatus === "sold" ? "Đã bán" : "Đã ẩn"}.`);
+      await loadItems(filters, bbox, pagination.page);
+      return;
+    }
+    setActionMessage(`Chưa cập nhật được trạng thái cho "${property.title}".`);
   };
   const toggleWishlist = async (property) => {
     const result = await api.toggleWishlist(property.id);
@@ -498,7 +721,10 @@ useEffect(() => {
             <div className="map-card-header">
               <div>
                 <div className="map-card-title">Khám phá bản đồ</div>
-                <p>{mapData.items.length} tin trên bản đồ · tâm {mapData.center.lat.toFixed(4)}, {mapData.center.lng.toFixed(4)}{bbox ? ` · bbox: ${bbox}` : ''}</p>
+                <p>
+                  {mapData.items.length} tin trên bản đồ
+                  {bbox ? " · đang quét theo vùng bạn chọn" : " · kéo bản đồ để khám phá thêm khu vực"}
+                </p>
               </div>
               <div className="map-card-actions">
                 <button type="button" onClick={() => loadItems(filters, bbox, pagination.page)}>Quét lại</button>
@@ -509,7 +735,7 @@ useEffect(() => {
             <LeafletMap
               items={mapData.items}
               center={mapData.center}
-              chip={`TP.HCM · ${mapData.items.length} tin`}
+              chip=""
               heatMode={heatMode}
               onBoundsChange={(nextBbox) => {
                 if (!nextBbox || nextBbox === bbox) return;
@@ -519,41 +745,55 @@ useEffect(() => {
             />
           </section>
 
-          <div className="results-topbar">
+          <div className="results-topbar" ref={resultsRef}>
             <div>
               <span className="results-num">{pagination.totalItems}</span>
               <span className="results-label"> bất động sản phù hợp</span>
               {loading && <span className="results-label"> · đang tải</span>}
             </div>
-            <select
-  className="sort-select"
-  value={filters.sort}
-  onChange={(e) => {
-    const nextFilters = {
-      ...filters,
-      sort: e.target.value,
-    };
-    setFilters(nextFilters);
-    loadItems(nextFilters, bbox, 1);
-  }}
->
-              <option value="newest">Mới nhất</option>
-              <option value="price_asc">Giá tăng dần</option>
-              <option value="price_desc">Giá giảm dần</option>
-              <option value="area_asc">Diện tích tăng dần</option>
-            </select>
+            <div className="sort-chip-row" role="tablist" aria-label="Sắp xếp bất động sản">
+              {SORT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`sort-chip ${filters.sort === option.value ? "active" : ""}`}
+                  onClick={() => {
+                    const nextFilters = {
+                      ...filters,
+                      sort: option.value,
+                    };
+                    setFilters(nextFilters);
+                    loadItems(nextFilters, bbox, 1);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
-
-          {savedSearches.length > 0 && <section className="map-card"><div className="map-card-header"><div><div className="map-card-title">Bộ lọc đã lưu</div><p>{savedSearches.length} bộ lọc</p></div></div><div className="amenity-grid">{savedSearches.map((item) => <article className="amenity-card" key={item.id}><h6>{item.name}</h6><p className="listing-desc">{Object.entries(item.filters || {}).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join(' · ') || 'Không có điều kiện'}</p><div className="listing-actions"><button type="button" className="btn-geo-secondary" onClick={async () => { await api.deleteSavedSearch(item.id); setSavedSearches((prev) => prev.filter((row) => row.id !== item.id)); }}>Xóa</button></div></article>)}</div></section>}
+          {actionMessage && <p className="muted-line">{actionMessage}</p>}
 
           <div className="property-card-list">
-            {items.map((property) => <PropertyCard property={property} key={property.id} onDelete={handleDelete} onWishlist={toggleWishlist} wishlistActive={wishlistIds.includes(property.id)} onCompare={toggleCompare} compareActive={compareIds.includes(property.id)} />)}
+            {items.map((property) => (
+              <PropertyCard
+                property={property}
+                key={property.id}
+                onDelete={isAdmin ? handleDelete : undefined}
+                canDelete={isAdmin}
+                onWishlist={toggleWishlist}
+                wishlistActive={wishlistIds.includes(property.id)}
+                onCompare={toggleCompare}
+                compareActive={compareIds.includes(property.id)}
+                canManageStatus={isAdmin}
+                onStageChange={isAdmin ? handleStageChange : undefined}
+              />
+            ))}
           </div>
           {!items.length && !loading && <div className="empty-state-panel">Không có bất động sản phù hợp với bộ lọc hiện tại.</div>}
           <div className="results-footer">
-            <div className="results-label">Trang {pagination.page} / {pagination.totalPages} · {pagination.limit} tin mỗi trang</div>
             <PaginationControls pagination={pagination} loading={loading} onPageChange={(page) => loadItems(filters, bbox, page)} />
           </div>
+          {savedSearches.length > 0 && <section className="map-card"><div className="map-card-header"><div><div className="map-card-title">Bộ lọc đã lưu</div><p>{savedSearches.length} bộ lọc</p></div></div><div className="amenity-grid">{savedSearches.map((item) => <article className="amenity-card" key={item.id}><h6>{item.name}</h6><p className="listing-desc">{Object.entries(item.filters || {}).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join(' · ') || 'Không có điều kiện'}</p><div className="listing-actions"><button type="button" className="btn-geo-secondary" onClick={async () => { await api.deleteSavedSearch(item.id); setSavedSearches((prev) => prev.filter((row) => row.id !== item.id)); }}>Xóa</button></div></article>)}</div></section>}
         </main>
       </div>
     </div>
@@ -565,13 +805,98 @@ export function NearbySearchPage() {
   const [radiusKm, setRadiusKm] = useState(5);
   const [items, setItems] = useState(fallbackProperties);
   const [loading, setLoading] = useState(false);
+  const [locationMode, setLocationMode] = useState("current");
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [locationLabel, setLocationLabel] = useState("TP.HCM");
+  const [locationMessage, setLocationMessage] = useState("");
+  const [placeSuggestions, setPlaceSuggestions] = useState([]);
+  const [placeSuggesting, setPlaceSuggesting] = useState(false);
 
   const search = async (payload = { center, radiusKm }) => {
     setLoading(true);
     const data = await api.nearbyProperties({ lat: payload.center.lat, lng: payload.center.lng, radiusKm: payload.radiusKm, limit: 30 });
-    if (data?.items?.length) setItems(data.items);
+    if (Array.isArray(data?.items)) {
+      setItems(data.items);
+      if (data.items.length) {
+        setLocationMessage("");
+      } else {
+        setLocationMessage("Không có bất động sản nào trong bán kính đã chọn.");
+      }
+    } else {
+      setItems([]);
+      setLocationMessage("Không tải được dữ liệu bất động sản gần đây.");
+    }
     setLoading(false);
   };
+
+  async function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationMessage("Trình duyệt này chưa hỗ trợ lấy vị trí hiện tại.");
+      return;
+    }
+
+    setLoading(true);
+    setLocationMessage("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const nextCenter = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        setCenter(nextCenter);
+        setLocationLabel("Vị trí hiện tại");
+        setLoading(false);
+        await search({ center: nextCenter, radiusKm });
+      },
+      () => {
+        setLoading(false);
+        setLocationMessage("Không lấy được vị trí hiện tại. Hãy kiểm tra quyền truy cập vị trí.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+      }
+    );
+  }
+
+  async function useSpecificPlace() {
+    const keyword = placeQuery.trim();
+
+    if (!keyword) {
+      setLocationMessage("Vui lòng nhập địa điểm cụ thể.");
+      return;
+    }
+
+    setLoading(true);
+    setLocationMessage("");
+
+    try {
+      const data = await fetchPlaceSuggestions(keyword, 1);
+      const first = data?.[0];
+
+      if (!first) {
+        setLocationMessage("Không tìm thấy địa điểm phù hợp.");
+        setLoading(false);
+        return;
+      }
+
+      const nextCenter = {
+        lat: Number(first.lat),
+        lng: Number(first.lng),
+      };
+
+      setCenter(nextCenter);
+      setLocationLabel(first.label || keyword);
+      setPlaceSuggestions([]);
+      setLoading(false);
+      await search({ center: nextCenter, radiusKm });
+    } catch {
+      setLoading(false);
+      setLocationMessage("Không tra cứu được địa điểm lúc này.");
+    }
+  }
 
 useEffect(() => {
 
@@ -585,18 +910,108 @@ useEffect(() => {
 
 }, []);
 
+useEffect(() => {
+  if (locationMode !== "manual") {
+    setPlaceSuggestions([]);
+    setPlaceSuggesting(false);
+    return;
+  }
+
+  const keyword = placeQuery.trim();
+  if (keyword.length < 2) {
+    setPlaceSuggestions([]);
+    setPlaceSuggesting(false);
+    return;
+  }
+
+  let active = true;
+  setPlaceSuggesting(true);
+  const timer = window.setTimeout(async () => {
+    try {
+      const suggestions = await fetchPlaceSuggestions(keyword, 5);
+      if (active) {
+        setPlaceSuggestions(suggestions);
+      }
+    } catch {
+      if (active) {
+        setPlaceSuggestions([]);
+      }
+    } finally {
+      if (active) {
+        setPlaceSuggesting(false);
+      }
+    }
+  }, 250);
+
+  return () => {
+    active = false;
+    window.clearTimeout(timer);
+  };
+}, [locationMode, placeQuery]);
+
   return (
     <div className="property-page">
-      <PageHero title="Tìm kiếm quanh đây" desc="Dựa trên lat/lng và bán kính thật từ backend Node.js." />
+      <PageHero title="Tìm kiếm quanh đây" desc="Chọn vị trí hiện tại hoặc nhập địa điểm cụ thể để tìm bất động sản lân cận." />
       <div className="container search-panel-wrap">
-        <form className="search-panel" onSubmit={(e) => { e.preventDefault(); search(); }}>
+        <form
+          className="search-panel"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (locationMode === "current") {
+              useCurrentLocation();
+              return;
+            }
+            useSpecificPlace();
+          }}
+        >
           <div className="form-group">
-            <label>Vĩ độ</label>
-            <input value={center.lat} onChange={(e) => setCenter((prev) => ({ ...prev, lat: Number(e.target.value) }))} type="number" step="0.000001" />
+            <label>Chế độ vị trí</label>
+            <select value={locationMode} onChange={(e) => setLocationMode(e.target.value)}>
+              <option value="current">Vị trí hiện tại</option>
+              <option value="manual">Nhập địa điểm cụ thể</option>
+            </select>
           </div>
           <div className="form-group">
-            <label>Kinh độ</label>
-            <input value={center.lng} onChange={(e) => setCenter((prev) => ({ ...prev, lng: Number(e.target.value) }))} type="number" step="0.000001" />
+            <label>{locationMode === "current" ? "Điểm xuất phát" : "Địa điểm cụ thể"}</label>
+            {locationMode === "current" ? (
+              <div className="search-static-field">Dùng GPS của thiết bị để lấy vị trí hiện tại</div>
+            ) : (
+              <div className="search-autocomplete">
+                <input
+                  value={placeQuery}
+                  onChange={(e) => setPlaceQuery(e.target.value)}
+                  type="text"
+                  placeholder="Ví dụ: Landmark 81, Bình Thạnh"
+                />
+                {(placeSuggesting || placeSuggestions.length > 0) && (
+                  <div className="search-suggestion-list">
+                    {placeSuggesting && !placeSuggestions.length ? (
+                      <button type="button" className="search-suggestion-item muted" disabled>
+                        Đang gợi ý địa điểm...
+                      </button>
+                    ) : (
+                      placeSuggestions.map((item) => (
+                        <button
+                          key={`${item.lat}-${item.lng}-${item.label}`}
+                          type="button"
+                          className="search-suggestion-item"
+                          onClick={async () => {
+                            setPlaceQuery(item.label);
+                            setPlaceSuggestions([]);
+                            setCenter({ lat: item.lat, lng: item.lng });
+                            setLocationLabel(item.label);
+                            setLocationMessage("");
+                            await search({ center: { lat: item.lat, lng: item.lng }, radiusKm });
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label>Bán kính: <span className="gold-text">{radiusKm}</span> km</label>
@@ -604,13 +1019,19 @@ useEffect(() => {
           </div>
           <button type="submit" className="btn-geo-primary search-submit">{loading ? 'Đang tìm...' : 'Tìm kiếm'}</button>
         </form>
+        <div className="search-location-summary">
+          <strong>Đang tìm quanh:</strong> {locationLabel}
+          {locationMessage && <p className="muted-line">{locationMessage}</p>}
+        </div>
       </div>
       <main className="container page-body">
-        <LeafletMap items={items} center={center} height={500} chip={`BÁN KÍNH ${radiusKm} KM`} heatMode={false} />
+        <LeafletMap items={items} center={center} height={500} chip={`${locationLabel} · ${radiusKm} KM`} heatMode={false} radiusKm={radiusKm} showRadius />
         <div className="section-topline">
           <h2 className="section-heading">Kết quả tìm kiếm</h2>
           <span className="stat-pill">{items.length} bất động sản trong vùng đệm</span>
         </div>
+        {loading && <div className="empty-state-panel">Đang tìm bất động sản quanh khu vực bạn chọn...</div>}
+        {!loading && !items.length && <div className="empty-state-panel">Chưa có bất động sản phù hợp trong vùng tìm kiếm này.</div>}
         <div className="property-card-list compact-list">
           {items.map((property) => (
             <div key={property.id}>
@@ -629,12 +1050,81 @@ export function AmenitySearchPage() {
   const [radiusKm, setRadiusKm] = useState(3);
   const [items, setItems] = useState(fallbackAmenities);
   const [loading, setLoading] = useState(false);
+  const [locationMode, setLocationMode] = useState("current");
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [locationLabel, setLocationLabel] = useState("Vị trí hiện tại");
+  const [locationMessage, setLocationMessage] = useState("");
+  const [placeSuggestions, setPlaceSuggestions] = useState([]);
+  const [placeSuggesting, setPlaceSuggesting] = useState(false);
 
-  const search = async () => {
+  const search = async (targetCenter = center, nextLabel = locationLabel) => {
     setLoading(true);
-    const data = await api.nearbyAmenities({ lat: center.lat, lng: center.lng, radiusKm, limit: 50 });
+    setLocationLabel(nextLabel);
+    const data = await api.nearbyAmenities({ lat: targetCenter.lat, lng: targetCenter.lng, radiusKm, limit: 50 });
     if (data?.items?.length) setItems(data.items);
+    else setItems([]);
     setLoading(false);
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationMessage("Thiết bị này không hỗ trợ lấy vị trí hiện tại.");
+      return;
+    }
+
+    setLocationMessage("Đang lấy vị trí hiện tại...");
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const nextCenter = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        setCenter(nextCenter);
+        setLocationMessage("Đã xác định vị trí hiện tại của bạn.");
+        await search(nextCenter, "Vị trí hiện tại");
+      },
+      () => {
+        setLocationMessage("Không thể lấy vị trí hiện tại. Hãy kiểm tra quyền truy cập vị trí của trình duyệt.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const useSpecificPlace = async () => {
+    const keyword = placeQuery.trim();
+    if (!keyword) {
+      setLocationMessage("Hãy nhập địa điểm cụ thể để tìm tiện ích.");
+      return;
+    }
+
+    setLoading(true);
+    setLocationMessage("Đang tìm vị trí từ địa điểm bạn nhập...");
+
+    try {
+      const results = await fetchPlaceSuggestions(keyword, 1);
+      const first = Array.isArray(results) ? results[0] : null;
+
+      if (!first) {
+        setLocationMessage("Không tìm thấy địa điểm phù hợp. Bạn thử nhập cụ thể hơn nhé.");
+        setLoading(false);
+        return;
+      }
+
+      const nextCenter = {
+        lat: Number(first.lat),
+        lng: Number(first.lng),
+      };
+      const nextLabel = first.label || keyword;
+
+      setCenter(nextCenter);
+      setLocationMessage("Đã chuyển sang vị trí bạn chọn.");
+      setPlaceSuggestions([]);
+      await search(nextCenter, nextLabel);
+    } catch {
+      setLocationMessage("Không thể tra cứu địa điểm lúc này. Bạn thử lại sau giúp mình.");
+      setLoading(false);
+    }
   };
 
 useEffect(() => {
@@ -649,18 +1139,108 @@ useEffect(() => {
 
 }, []);
 
+useEffect(() => {
+  if (locationMode !== "manual") {
+    setPlaceSuggestions([]);
+    setPlaceSuggesting(false);
+    return;
+  }
+
+  const keyword = placeQuery.trim();
+  if (keyword.length < 2) {
+    setPlaceSuggestions([]);
+    setPlaceSuggesting(false);
+    return;
+  }
+
+  let active = true;
+  setPlaceSuggesting(true);
+  const timer = window.setTimeout(async () => {
+    try {
+      const suggestions = await fetchPlaceSuggestions(keyword, 5);
+      if (active) {
+        setPlaceSuggestions(suggestions);
+      }
+    } catch {
+      if (active) {
+        setPlaceSuggestions([]);
+      }
+    } finally {
+      if (active) {
+        setPlaceSuggesting(false);
+      }
+    }
+  }, 250);
+
+  return () => {
+    active = false;
+    window.clearTimeout(timer);
+  };
+}, [locationMode, placeQuery]);
+
   return (
     <div className="property-page">
-      <PageHero title="Tiện ích khu vực" desc="Đang gọi backend để lấy tiện ích quanh điểm tìm kiếm." />
+      <PageHero title="Tiện ích khu vực" desc="Chọn vị trí hiện tại hoặc nhập địa điểm cụ thể để xem tiện ích lân cận." />
       <div className="container search-panel-wrap">
-        <form className="search-panel amenities-panel" onSubmit={(e) => { e.preventDefault(); search(); }}>
+        <form
+          className="search-panel amenities-panel"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (locationMode === "current") {
+              useCurrentLocation();
+              return;
+            }
+            useSpecificPlace();
+          }}
+        >
           <div className="form-group">
-            <label>Vĩ độ</label>
-            <input value={center.lat} onChange={(e) => setCenter((prev) => ({ ...prev, lat: Number(e.target.value) }))} type="number" step="0.000001" />
+            <label>Chế độ vị trí</label>
+            <select value={locationMode} onChange={(e) => setLocationMode(e.target.value)}>
+              <option value="current">Vị trí hiện tại</option>
+              <option value="manual">Nhập địa điểm cụ thể</option>
+            </select>
           </div>
           <div className="form-group">
-            <label>Kinh độ</label>
-            <input value={center.lng} onChange={(e) => setCenter((prev) => ({ ...prev, lng: Number(e.target.value) }))} type="number" step="0.000001" />
+            <label>{locationMode === "current" ? "Điểm xuất phát" : "Địa điểm cụ thể"}</label>
+            {locationMode === "current" ? (
+              <div className="search-static-field">Dùng GPS của thiết bị để lấy vị trí hiện tại</div>
+            ) : (
+              <div className="search-autocomplete">
+                <input
+                  value={placeQuery}
+                  onChange={(e) => setPlaceQuery(e.target.value)}
+                  type="text"
+                  placeholder="Ví dụ: Chợ Bến Thành, Quận 1"
+                />
+                {(placeSuggesting || placeSuggestions.length > 0) && (
+                  <div className="search-suggestion-list">
+                    {placeSuggesting && !placeSuggestions.length ? (
+                      <button type="button" className="search-suggestion-item muted" disabled>
+                        Đang gợi ý địa điểm...
+                      </button>
+                    ) : (
+                      placeSuggestions.map((item) => (
+                        <button
+                          key={`${item.lat}-${item.lng}-${item.label}`}
+                          type="button"
+                          className="search-suggestion-item"
+                          onClick={async () => {
+                            setPlaceQuery(item.label);
+                            setPlaceSuggestions([]);
+                            setCenter({ lat: item.lat, lng: item.lng });
+                            setLocationLabel(item.label);
+                            setLocationMessage("");
+                            await search({ lat: item.lat, lng: item.lng }, item.label);
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label>Bán kính: <span className="gold-text">{radiusKm}</span> km</label>
@@ -668,9 +1248,15 @@ useEffect(() => {
           </div>
           <button type="submit" className="btn-geo-primary search-submit">{loading ? 'Đang tìm...' : 'Tìm'}</button>
         </form>
+        <div className="search-location-summary">
+          <strong>Đang tìm quanh:</strong> {locationLabel}
+          {locationMessage && <p className="muted-line">{locationMessage}</p>}
+        </div>
       </div>
       <main className="container page-body">
-        <LeafletMap items={items} center={center} height={450} chip={`TIỆN ÍCH · ${radiusKm} KM`} heatMode={false} />
+        <LeafletMap items={items} center={center} height={450} chip={`${locationLabel} · ${radiusKm} KM`} heatMode={false} radiusKm={radiusKm} showRadius />
+        {loading && <div className="empty-state-panel">Đang tải tiện ích quanh khu vực bạn chọn...</div>}
+        {!loading && !items.length && <div className="empty-state-panel">Chưa có tiện ích nào trong bán kính hiện tại.</div>}
         <div className="amenity-grid">
           {items.map((amenity) => (
             <article className="amenity-card" key={amenity.id}>
@@ -746,13 +1332,6 @@ useEffect(() => {
     type="button"
     className="btn-geo-secondary danger-btn"
     onClick={() => {
-
-      const confirmDelete = window.confirm(
-        "Bạn có muốn bỏ bất động sản này khỏi danh sách so sánh không?"
-      );
-
-      if (!confirmDelete) return;
-
       setCompareItems((prev) =>
         prev.filter(
           (item) => item.id !== property.id

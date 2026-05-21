@@ -1,11 +1,691 @@
 {
-  "nextLeadId": 2,
-  "nextAppointmentId": 1,
+  "nextLeadId": 50,
+  "nextAppointmentId": 23,
   "nextPasswordResetRequestId": 1,
-  "leads": [],
-  "appointments": [],
+  "leads": [
+    {
+      "id": "2",
+      "name": "Lead kiểm thử",
+      "email": "smoke@example.com",
+      "phone": "0900000001",
+      "property_interest": "Yêu cầu kiểm thử",
+      "created_at": "2026-05-20T21:02:01.907Z",
+      "pipeline_stage": "new",
+      "message": ""
+    },
+    {
+      "id": "3",
+      "name": "Minh Khang",
+      "email": "minh.khang.3@mail.demo",
+      "phone": "0965953301",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Quan tâm căn hộ gần trường học và metro.",
+      "created_at": "2026-01-19T19:18:50.284Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "4",
+      "name": "Gia Hân",
+      "email": "gia.han.4@mail.demo",
+      "phone": "0947713825",
+      "property_interest": "Nhà phố ở thực",
+      "message": "Cần tìm nhà để ở trong 2 tháng tới.",
+      "created_at": "2026-05-15T05:25:05.525Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "5",
+      "name": "Bảo Trân",
+      "email": "bao.tran.5@mail.demo",
+      "phone": "0933078804",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Quan tâm căn hộ gần trường học và metro.",
+      "created_at": "2026-05-08T20:33:45.530Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "6",
+      "name": "Thanh Lam",
+      "email": "thanh.lam.6@mail.demo",
+      "phone": "0969131897",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Muốn xem nhà vào cuối tuần này.",
+      "created_at": "2026-01-15T14:52:29.036Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "7",
+      "name": "Quốc Huy",
+      "email": "quoc.huy.7@mail.demo",
+      "phone": "0993305954",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-01-29T18:13:16.512Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "8",
+      "name": "Thùy Tiên",
+      "email": "thuy.tien.8@mail.demo",
+      "phone": "0974025476",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần sản phẩm để đầu tư cho thuê.",
+      "created_at": "2026-01-30T09:15:16.635Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "9",
+      "name": "Anh Khoa",
+      "email": "anh.khoa.9@mail.demo",
+      "phone": "0922608201",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần tìm nhà để ở trong 2 tháng tới.",
+      "created_at": "2026-01-24T23:59:32.138Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "10",
+      "name": "Kim Anh",
+      "email": "kim.anh.10@mail.demo",
+      "phone": "0913386561",
+      "property_interest": "Biệt thự compound",
+      "message": "Muốn xem nhà vào cuối tuần này.",
+      "created_at": "2026-03-09T18:32:05.743Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "11",
+      "name": "Minh Thu",
+      "email": "minh.thu.11@mail.demo",
+      "phone": "0958383305",
+      "property_interest": "Nhà phố ở thực",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2025-12-31T00:19:24.881Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "12",
+      "name": "Quỳnh Như",
+      "email": "quynh.nhu.12@mail.demo",
+      "phone": "0953993606",
+      "property_interest": "Nhà phố ở thực",
+      "message": "Muốn xem nhà vào cuối tuần này.",
+      "created_at": "2025-12-31T15:11:10.041Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "13",
+      "name": "Duc Huy",
+      "email": "duc.huy.13@mail.demo",
+      "phone": "0979434549",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-04-10T11:33:37.414Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "14",
+      "name": "Hoàng Yến",
+      "email": "hoang.yen.14@mail.demo",
+      "phone": "0971196721",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Cần sản phẩm để đầu tư cho thuê.",
+      "created_at": "2026-02-15T23:06:02.218Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "15",
+      "name": "Thanh Đất",
+      "email": "thanh.dat.15@mail.demo",
+      "phone": "0922108904",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Quan tâm căn hộ gần trường học và metro.",
+      "created_at": "2025-12-30T21:16:56.130Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "16",
+      "name": "Bảo Nhi",
+      "email": "bao.nhi.16@mail.demo",
+      "phone": "0919946938",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Quan tâm căn hộ gần trường học và metro.",
+      "created_at": "2025-12-29T20:19:42.134Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "17",
+      "name": "Gia Huy",
+      "email": "gia.huy.17@mail.demo",
+      "phone": "0925633553",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-01-11T00:58:49.201Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "18",
+      "name": "Thanh Trúc",
+      "email": "thanh.truc.18@mail.demo",
+      "phone": "0948913297",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Cần tìm nhà để ở trong 2 tháng tới.",
+      "created_at": "2026-03-01T12:53:06.478Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "19",
+      "name": "Quoc Bao",
+      "email": "quoc.bao.19@mail.demo",
+      "phone": "0920129149",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-04-30T17:26:41.156Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "20",
+      "name": "Mỹ Duyên",
+      "email": "my.duyen.20@mail.demo",
+      "phone": "0985715264",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-04-29T16:15:08.791Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "21",
+      "name": "Khanh An",
+      "email": "khanh.an.21@mail.demo",
+      "phone": "0992492214",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Cần sản phẩm để đầu tư cho thuê.",
+      "created_at": "2025-12-30T21:34:55.625Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "22",
+      "name": "Nhật Vy",
+      "email": "nhat.vy.22@mail.demo",
+      "phone": "0970636930",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Cần tìm nhà để ở trong 2 tháng tới.",
+      "created_at": "2026-03-24T09:52:08.854Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "23",
+      "name": "Thanh Nhan",
+      "email": "thanh.nhan.23@mail.demo",
+      "phone": "0988750950",
+      "property_interest": "Biệt thự compound",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-03-26T13:27:55.783Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "24",
+      "name": "Tuan Kiet",
+      "email": "tuan.kiet.24@mail.demo",
+      "phone": "0997355536",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần tìm nhà để ở trong 2 tháng tới.",
+      "created_at": "2026-04-15T22:04:38.526Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "25",
+      "name": "Ngọc Mai",
+      "email": "ngoc.mai.25@mail.demo",
+      "phone": "0941921950",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-03-28T08:58:36.508Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "26",
+      "name": "Gia Linh",
+      "email": "gia.linh.26@mail.demo",
+      "phone": "0919228704",
+      "property_interest": "Biệt thự compound",
+      "message": "Quan tâm căn hộ gần trường học và metro.",
+      "created_at": "2026-05-11T12:08:17.957Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "27",
+      "name": "Hoang Nam",
+      "email": "hoang.nam.27@mail.demo",
+      "phone": "0978598297",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-04-16T15:58:03.768Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "28",
+      "name": "Bảo Châu",
+      "email": "bao.chau.28@mail.demo",
+      "phone": "0967783649",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-05-18T11:14:54.107Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "29",
+      "name": "Anh Thư",
+      "email": "anh.thu.29@mail.demo",
+      "phone": "0956233819",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Muốn xem nhà vào cuối tuần này.",
+      "created_at": "2026-05-07T04:18:17.466Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "30",
+      "name": "Minh Chau",
+      "email": "minh.chau.30@mail.demo",
+      "phone": "0988442097",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-04-28T08:18:36.819Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "31",
+      "name": "Tien Đất",
+      "email": "tien.dat.31@mail.demo",
+      "phone": "0990200165",
+      "property_interest": "Nhà phố ở thực",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-05-18T23:43:12.845Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "32",
+      "name": "Hồng Nhung",
+      "email": "hong.nhung.32@mail.demo",
+      "phone": "0941756828",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần tìm nhà để ở trong 2 tháng tới.",
+      "created_at": "2026-03-18T16:26:17.577Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "33",
+      "name": "Phuc An",
+      "email": "phuc.an.33@mail.demo",
+      "phone": "0924947559",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-04-09T08:52:16.947Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "34",
+      "name": "Nhã Uyên",
+      "email": "nha.uyen.34@mail.demo",
+      "phone": "0921760276",
+      "property_interest": "Nhà phố ở thực",
+      "message": "Muốn xem nhà vào cuối tuần này.",
+      "created_at": "2026-01-21T21:01:55.828Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "35",
+      "name": "Minh Khang",
+      "email": "minh.khang.35@mail.demo",
+      "phone": "0961911669",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần tìm nhà để ở trong 2 tháng tới.",
+      "created_at": "2026-03-07T14:05:49.496Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "36",
+      "name": "Gia Hân",
+      "email": "gia.han.36@mail.demo",
+      "phone": "0938228628",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần sản phẩm để đầu tư cho thuê.",
+      "created_at": "2026-02-03T09:17:52.142Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "37",
+      "name": "Bảo Trân",
+      "email": "bao.tran.37@mail.demo",
+      "phone": "0941357841",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Cần sản phẩm để đầu tư cho thuê.",
+      "created_at": "2026-02-07T12:54:29.986Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "38",
+      "name": "Thanh Lam",
+      "email": "thanh.lam.38@mail.demo",
+      "phone": "0944903420",
+      "property_interest": "Biệt thự compound",
+      "message": "Quan tâm căn hộ gần trường học và metro.",
+      "created_at": "2026-02-25T20:56:41.859Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "39",
+      "name": "Quốc Huy",
+      "email": "quoc.huy.39@mail.demo",
+      "phone": "0974803355",
+      "property_interest": "Nhà phố ở thực",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-03-22T07:16:52.611Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "40",
+      "name": "Thùy Tiên",
+      "email": "thuy.tien.40@mail.demo",
+      "phone": "0941653996",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Cần sản phẩm để đầu tư cho thuê.",
+      "created_at": "2026-01-03T16:06:51.734Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "41",
+      "name": "Anh Khoa",
+      "email": "anh.khoa.41@mail.demo",
+      "phone": "0951111523",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2025-12-26T13:00:35.608Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "42",
+      "name": "Kim Anh",
+      "email": "kim.anh.42@mail.demo",
+      "phone": "0958921592",
+      "property_interest": "Nhà phố ở thực",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-02-16T11:04:23.415Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "43",
+      "name": "Minh Thu",
+      "email": "minh.thu.43@mail.demo",
+      "phone": "0940534642",
+      "property_interest": "Biệt thự compound",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-03-18T12:35:26.938Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "44",
+      "name": "Quỳnh Như",
+      "email": "quynh.nhu.44@mail.demo",
+      "phone": "0980027449",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Cần sản phẩm để đầu tư cho thuê.",
+      "created_at": "2026-03-08T22:56:26.453Z",
+      "pipeline_stage": "contacted"
+    },
+    {
+      "id": "45",
+      "name": "Duc Huy",
+      "email": "duc.huy.45@mail.demo",
+      "phone": "0964927031",
+      "property_interest": "Biệt thự compound",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2026-02-18T12:30:22.398Z",
+      "pipeline_stage": "qualified"
+    },
+    {
+      "id": "46",
+      "name": "Hoàng Yến",
+      "email": "hoang.yen.46@mail.demo",
+      "phone": "0928525239",
+      "property_interest": "Biệt thự compound",
+      "message": "Muốn xem nhà vào cuối tuần này.",
+      "created_at": "2025-12-27T12:19:28.310Z",
+      "pipeline_stage": "won"
+    },
+    {
+      "id": "47",
+      "name": "Thanh Đất",
+      "email": "thanh.dat.47@mail.demo",
+      "phone": "0973569771",
+      "property_interest": "Căn hộ 2PN gần trung tâm",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-05-14T23:59:32.566Z",
+      "pipeline_stage": "lost"
+    },
+    {
+      "id": "48",
+      "name": "Bảo Nhi",
+      "email": "bao.nhi.48@mail.demo",
+      "phone": "0971259057",
+      "property_interest": "Biệt thự compound",
+      "message": "Ưu tiên khu compound và an ninh cao.",
+      "created_at": "2026-04-09T11:42:32.305Z",
+      "pipeline_stage": "new"
+    },
+    {
+      "id": "49",
+      "name": "Gia Huy",
+      "email": "gia.huy.49@mail.demo",
+      "phone": "0978879094",
+      "property_interest": "Đất nền đầu tư",
+      "message": "Cần đất nền để giữ tài sản trong 2-3 năm.",
+      "created_at": "2025-12-31T01:52:07.979Z",
+      "pipeline_stage": "contacted"
+    }
+  ],
+  "appointments": [
+    {
+      "id": "1",
+      "full_name": "Smoke User",
+      "phone": "0900000002",
+      "property_id": "338",
+      "appointment_date": "2026-05-22",
+      "note": "Smoke test",
+      "created_at": "2026-05-20T21:02:01.919Z"
+    },
+    {
+      "id": "2",
+      "full_name": "Thùy Tiên",
+      "phone": "0997772727",
+      "property_id": "392",
+      "appointment_date": "2026-06-01",
+      "note": "Cần tư vấn thêm về vay ngân hàng.",
+      "created_at": "2026-05-18T15:33:42.204Z"
+    },
+    {
+      "id": "3",
+      "full_name": "Anh Khoa",
+      "phone": "0967276466",
+      "property_id": "321",
+      "appointment_date": "2026-05-22",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-03-09T15:54:16.591Z"
+    },
+    {
+      "id": "4",
+      "full_name": "Kim Anh",
+      "phone": "0956341606",
+      "property_id": "317",
+      "appointment_date": "2026-06-03",
+      "note": "Muốn xem thực tế cùng gia đình.",
+      "created_at": "2026-03-24T04:01:58.303Z"
+    },
+    {
+      "id": "5",
+      "full_name": "Minh Thu",
+      "phone": "0948768103",
+      "property_id": "442",
+      "appointment_date": "2026-06-10",
+      "note": "Muốn xem thực tế cùng gia đình.",
+      "created_at": "2026-02-22T15:17:57.111Z"
+    },
+    {
+      "id": "6",
+      "full_name": "Quỳnh Như",
+      "phone": "0953243661",
+      "property_id": "352",
+      "appointment_date": "2026-06-11",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-03-16T22:13:19.235Z"
+    },
+    {
+      "id": "7",
+      "full_name": "Duc Huy",
+      "phone": "0950289001",
+      "property_id": "453",
+      "appointment_date": "2026-06-10",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-04-04T09:22:34.537Z"
+    },
+    {
+      "id": "8",
+      "full_name": "Hoàng Yến",
+      "phone": "0980367633",
+      "property_id": "443",
+      "appointment_date": "2026-06-03",
+      "note": "Muốn xem thực tế cùng gia đình.",
+      "created_at": "2026-05-06T16:29:33.778Z"
+    },
+    {
+      "id": "9",
+      "full_name": "Thanh Đất",
+      "phone": "0937663108",
+      "property_id": "317",
+      "appointment_date": "2026-06-14",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-05-13T22:43:27.498Z"
+    },
+    {
+      "id": "10",
+      "full_name": "Bảo Nhi",
+      "phone": "0965516935",
+      "property_id": "329",
+      "appointment_date": "2026-06-12",
+      "note": "Muốn xem thực tế cùng gia đình.",
+      "created_at": "2026-04-14T10:02:11.893Z"
+    },
+    {
+      "id": "11",
+      "full_name": "Gia Huy",
+      "phone": "0968892467",
+      "property_id": "356",
+      "appointment_date": "2026-05-24",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-05-01T15:11:09.767Z"
+    },
+    {
+      "id": "12",
+      "full_name": "Thanh Trúc",
+      "phone": "0918174726",
+      "property_id": "359",
+      "appointment_date": "2026-06-12",
+      "note": "Cần xem buổi tối sau giờ hành chính.",
+      "created_at": "2026-03-31T05:20:38.291Z"
+    },
+    {
+      "id": "13",
+      "full_name": "Quoc Bao",
+      "phone": "0935080129",
+      "property_id": "369",
+      "appointment_date": "2026-06-06",
+      "note": "Cần tư vấn thêm về vay ngân hàng.",
+      "created_at": "2026-04-25T20:05:42.325Z"
+    },
+    {
+      "id": "14",
+      "full_name": "Mỹ Duyên",
+      "phone": "0981495914",
+      "property_id": "375",
+      "appointment_date": "2026-06-07",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-04-09T08:03:04.698Z"
+    },
+    {
+      "id": "15",
+      "full_name": "Khanh An",
+      "phone": "0947956920",
+      "property_id": "312",
+      "appointment_date": "2026-06-01",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-04-27T00:08:11.984Z"
+    },
+    {
+      "id": "16",
+      "full_name": "Nhật Vy",
+      "phone": "0991142434",
+      "property_id": "450",
+      "appointment_date": "2026-06-07",
+      "note": "Cần xem buổi tối sau giờ hành chính.",
+      "created_at": "2026-05-09T00:07:21.709Z"
+    },
+    {
+      "id": "17",
+      "full_name": "Thanh Nhan",
+      "phone": "0928192643",
+      "property_id": "361",
+      "appointment_date": "2026-05-29",
+      "note": "Cần tư vấn thêm về vay ngân hàng.",
+      "created_at": "2026-02-26T10:39:26.347Z"
+    },
+    {
+      "id": "18",
+      "full_name": "Tuan Kiet",
+      "phone": "0978205186",
+      "property_id": "369",
+      "appointment_date": "2026-05-23",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-05-12T09:51:50.993Z"
+    },
+    {
+      "id": "19",
+      "full_name": "Ngọc Mai",
+      "phone": "0929569201",
+      "property_id": "398",
+      "appointment_date": "2026-06-13",
+      "note": "Cần tư vấn thêm về vay ngân hàng.",
+      "created_at": "2026-04-18T20:45:46.977Z"
+    },
+    {
+      "id": "20",
+      "full_name": "Gia Linh",
+      "phone": "0941207314",
+      "property_id": "408",
+      "appointment_date": "2026-06-04",
+      "note": "Cần xem buổi tối sau giờ hành chính.",
+      "created_at": "2026-04-23T10:40:40.821Z"
+    },
+    {
+      "id": "21",
+      "full_name": "Hoang Nam",
+      "phone": "0913781013",
+      "property_id": "452",
+      "appointment_date": "2026-05-28",
+      "note": "Cần trao đổi về pháp lý trước khi đặt cọc.",
+      "created_at": "2026-04-06T06:55:17.806Z"
+    },
+    {
+      "id": "22",
+      "full_name": "Bảo Châu",
+      "phone": "0996172067",
+      "property_id": "394",
+      "appointment_date": "2026-05-30",
+      "note": "Cần tư vấn thêm về vay ngân hàng.",
+      "created_at": "2026-04-20T02:12:22.365Z"
+    }
+  ],
   "passwordResetRequests": [],
-  "nextAgentReviewId": 17,
+  "nextAgentReviewId": 61,
   "agentReviews": [
     {
       "id": "16",
@@ -140,6 +820,490 @@
       "comment": "h",
       "author_name": "Khách vãng lai",
       "created_at": "2026-05-20T15:28:04.958Z"
+    },
+    {
+      "id": "17",
+      "agent_id": "76",
+      "reviewer_key": "seed:1:1",
+      "reviewer_user_id": null,
+      "rating": 4,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Quản trị hệ thống",
+      "created_at": "2026-02-03T13:10:14.362Z",
+      "updated_at": "2026-02-03T13:10:14.362Z"
+    },
+    {
+      "id": "18",
+      "agent_id": "77",
+      "reviewer_key": "seed:2:2",
+      "reviewer_user_id": null,
+      "rating": 3,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Môi giới demo",
+      "created_at": "2026-03-10T04:01:24.618Z",
+      "updated_at": "2026-03-10T04:01:24.618Z"
+    },
+    {
+      "id": "19",
+      "agent_id": "75",
+      "reviewer_key": "seed:3:3",
+      "reviewer_user_id": 3,
+      "rating": 4,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Người dùng demo",
+      "created_at": "2026-05-16T13:26:58.930Z",
+      "updated_at": "2026-05-16T13:26:58.930Z"
+    },
+    {
+      "id": "20",
+      "agent_id": "66",
+      "reviewer_key": "seed:4:4",
+      "reviewer_user_id": 4,
+      "rating": 5,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Kim",
+      "created_at": "2026-04-05T08:41:53.899Z",
+      "updated_at": "2026-04-05T08:41:53.899Z"
+    },
+    {
+      "id": "21",
+      "agent_id": "82",
+      "reviewer_key": "seed:5:5",
+      "reviewer_user_id": 5,
+      "rating": 5,
+      "comment": "Hỗ trợ thủ tục ổn, giao tiếp dễ chịu và chuyên nghiệp.",
+      "author_name": "Nhai",
+      "created_at": "2026-04-03T08:32:07.470Z",
+      "updated_at": "2026-04-03T08:32:07.470Z"
+    },
+    {
+      "id": "22",
+      "agent_id": "76",
+      "reviewer_key": "seed:6:6",
+      "reviewer_user_id": 6,
+      "rating": 5,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "rụ",
+      "created_at": "2026-02-24T23:13:17.307Z",
+      "updated_at": "2026-02-24T23:13:17.307Z"
+    },
+    {
+      "id": "23",
+      "agent_id": "76",
+      "reviewer_key": "seed:7:7",
+      "reviewer_user_id": null,
+      "rating": 5,
+      "comment": "Cần thêm lựa chọn phù hợp ngân sách hơn nhưng thái độ tốt.",
+      "author_name": "Môi giới",
+      "created_at": "2026-02-03T09:33:23.532Z",
+      "updated_at": "2026-02-03T09:33:23.532Z"
+    },
+    {
+      "id": "24",
+      "agent_id": "66",
+      "reviewer_key": "seed:8:8",
+      "reviewer_user_id": null,
+      "rating": 4,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Môi giới demo",
+      "created_at": "2026-02-07T04:09:50.278Z",
+      "updated_at": "2026-02-07T04:09:50.278Z"
+    },
+    {
+      "id": "25",
+      "agent_id": "76",
+      "reviewer_key": "seed:9:9",
+      "reviewer_user_id": 9,
+      "rating": 5,
+      "comment": "Phản hồi nhanh, thông tin minh bạch và đi xem nhà đúng giờ.",
+      "author_name": "Khách hàng",
+      "created_at": "2026-02-15T11:32:35.109Z",
+      "updated_at": "2026-02-15T11:32:35.109Z"
+    },
+    {
+      "id": "26",
+      "agent_id": "77",
+      "reviewer_key": "seed:10:10",
+      "reviewer_user_id": null,
+      "rating": 5,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Minh Khang",
+      "created_at": "2026-02-04T07:28:34.141Z",
+      "updated_at": "2026-02-04T07:28:34.141Z"
+    },
+    {
+      "id": "27",
+      "agent_id": "67",
+      "reviewer_key": "seed:11:11",
+      "reviewer_user_id": null,
+      "rating": 5,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Gia Hân",
+      "created_at": "2026-04-06T16:19:10.516Z",
+      "updated_at": "2026-04-06T16:19:10.516Z"
+    },
+    {
+      "id": "28",
+      "agent_id": "79",
+      "reviewer_key": "seed:12:12",
+      "reviewer_user_id": null,
+      "rating": 4,
+      "comment": "Phản hồi nhanh, thông tin minh bạch và đi xem nhà đúng giờ.",
+      "author_name": "Bảo Trân",
+      "created_at": "2026-03-18T11:20:52.890Z",
+      "updated_at": "2026-03-18T11:20:52.890Z"
+    },
+    {
+      "id": "29",
+      "agent_id": "80",
+      "reviewer_key": "seed:13:13",
+      "reviewer_user_id": null,
+      "rating": 4,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Thanh Lam",
+      "created_at": "2026-04-04T21:52:30.637Z",
+      "updated_at": "2026-04-04T21:52:30.637Z"
+    },
+    {
+      "id": "30",
+      "agent_id": "68",
+      "reviewer_key": "seed:14:14",
+      "reviewer_user_id": null,
+      "rating": 5,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Quốc Huy",
+      "created_at": "2026-05-16T02:45:54.691Z",
+      "updated_at": "2026-05-16T02:45:54.691Z"
+    },
+    {
+      "id": "31",
+      "agent_id": "67",
+      "reviewer_key": "seed:15:15",
+      "reviewer_user_id": null,
+      "rating": 4,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Thùy Tiên",
+      "created_at": "2026-02-11T10:05:26.025Z",
+      "updated_at": "2026-02-11T10:05:26.025Z"
+    },
+    {
+      "id": "32",
+      "agent_id": "81",
+      "reviewer_key": "seed:16:16",
+      "reviewer_user_id": null,
+      "rating": 4,
+      "comment": "Hỗ trợ thủ tục ổn, giao tiếp dễ chịu và chuyên nghiệp.",
+      "author_name": "Anh Khoa",
+      "created_at": "2026-02-08T07:44:58.798Z",
+      "updated_at": "2026-02-08T07:44:58.798Z"
+    },
+    {
+      "id": "33",
+      "agent_id": "81",
+      "reviewer_key": "seed:17:17",
+      "reviewer_user_id": null,
+      "rating": 3,
+      "comment": "Hỗ trợ thủ tục ổn, giao tiếp dễ chịu và chuyên nghiệp.",
+      "author_name": "Kim Anh",
+      "created_at": "2026-03-21T23:24:34.042Z",
+      "updated_at": "2026-03-21T23:24:34.042Z"
+    },
+    {
+      "id": "34",
+      "agent_id": "70",
+      "reviewer_key": "seed:18:18",
+      "reviewer_user_id": 18,
+      "rating": 5,
+      "comment": "Phản hồi nhanh, thông tin minh bạch và đi xem nhà đúng giờ.",
+      "author_name": "Minh Thu",
+      "created_at": "2026-03-30T00:15:06.574Z",
+      "updated_at": "2026-03-30T00:15:06.574Z"
+    },
+    {
+      "id": "35",
+      "agent_id": "83",
+      "reviewer_key": "seed:19:19",
+      "reviewer_user_id": 19,
+      "rating": 4,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Quỳnh Như",
+      "created_at": "2026-02-21T12:59:32.232Z",
+      "updated_at": "2026-02-21T12:59:32.232Z"
+    },
+    {
+      "id": "36",
+      "agent_id": "69",
+      "reviewer_key": "seed:20:20",
+      "reviewer_user_id": 20,
+      "rating": 5,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Duc Huy",
+      "created_at": "2026-02-03T23:06:42.459Z",
+      "updated_at": "2026-02-03T23:06:42.459Z"
+    },
+    {
+      "id": "37",
+      "agent_id": "69",
+      "reviewer_key": "seed:21:21",
+      "reviewer_user_id": 21,
+      "rating": 5,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Hoàng Yến",
+      "created_at": "2026-04-06T06:33:06.801Z",
+      "updated_at": "2026-04-06T06:33:06.801Z"
+    },
+    {
+      "id": "38",
+      "agent_id": "76",
+      "reviewer_key": "seed:22:22",
+      "reviewer_user_id": 22,
+      "rating": 4,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Thanh Đất",
+      "created_at": "2026-02-02T15:23:10.536Z",
+      "updated_at": "2026-02-02T15:23:10.536Z"
+    },
+    {
+      "id": "39",
+      "agent_id": "68",
+      "reviewer_key": "seed:23:23",
+      "reviewer_user_id": 23,
+      "rating": 5,
+      "comment": "Cần thêm lựa chọn phù hợp ngân sách hơn nhưng thái độ tốt.",
+      "author_name": "Bảo Nhi",
+      "created_at": "2026-04-19T00:30:46.797Z",
+      "updated_at": "2026-04-19T00:30:46.797Z"
+    },
+    {
+      "id": "40",
+      "agent_id": "70",
+      "reviewer_key": "seed:24:24",
+      "reviewer_user_id": 24,
+      "rating": 5,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Gia Huy",
+      "created_at": "2026-02-09T18:55:24.915Z",
+      "updated_at": "2026-02-09T18:55:24.915Z"
+    },
+    {
+      "id": "41",
+      "agent_id": "70",
+      "reviewer_key": "seed:25:25",
+      "reviewer_user_id": 25,
+      "rating": 4,
+      "comment": "Phản hồi nhanh, thông tin minh bạch và đi xem nhà đúng giờ.",
+      "author_name": "Thanh Trúc",
+      "created_at": "2026-03-22T20:39:27.360Z",
+      "updated_at": "2026-03-22T20:39:27.360Z"
+    },
+    {
+      "id": "42",
+      "agent_id": "83",
+      "reviewer_key": "seed:26:26",
+      "reviewer_user_id": 26,
+      "rating": 3,
+      "comment": "Phản hồi nhanh, thông tin minh bạch và đi xem nhà đúng giờ.",
+      "author_name": "Quoc Bao",
+      "created_at": "2026-04-05T00:26:41.380Z",
+      "updated_at": "2026-04-05T00:26:41.380Z"
+    },
+    {
+      "id": "43",
+      "agent_id": "76",
+      "reviewer_key": "seed:27:27",
+      "reviewer_user_id": 27,
+      "rating": 4,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Mỹ Duyên",
+      "created_at": "2026-02-08T01:09:59.050Z",
+      "updated_at": "2026-02-08T01:09:59.050Z"
+    },
+    {
+      "id": "44",
+      "agent_id": "75",
+      "reviewer_key": "seed:28:28",
+      "reviewer_user_id": 28,
+      "rating": 5,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Khanh An",
+      "created_at": "2026-04-20T12:28:51.418Z",
+      "updated_at": "2026-04-20T12:28:51.418Z"
+    },
+    {
+      "id": "45",
+      "agent_id": "66",
+      "reviewer_key": "seed:29:29",
+      "reviewer_user_id": 29,
+      "rating": 5,
+      "comment": "Hỗ trợ thủ tục ổn, giao tiếp dễ chịu và chuyên nghiệp.",
+      "author_name": "Nhật Vy",
+      "created_at": "2026-05-18T10:02:31.671Z",
+      "updated_at": "2026-05-18T10:02:31.671Z"
+    },
+    {
+      "id": "46",
+      "agent_id": "68",
+      "reviewer_key": "seed:30:30",
+      "reviewer_user_id": 30,
+      "rating": 3,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Thanh Nhan",
+      "created_at": "2026-05-04T03:09:50.527Z",
+      "updated_at": "2026-05-04T03:09:50.527Z"
+    },
+    {
+      "id": "47",
+      "agent_id": "68",
+      "reviewer_key": "seed:31:31",
+      "reviewer_user_id": 31,
+      "rating": 5,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Tuan Kiet",
+      "created_at": "2026-04-20T11:17:52.295Z",
+      "updated_at": "2026-04-20T11:17:52.295Z"
+    },
+    {
+      "id": "48",
+      "agent_id": "75",
+      "reviewer_key": "seed:32:32",
+      "reviewer_user_id": 32,
+      "rating": 5,
+      "comment": "Cần thêm lựa chọn phù hợp ngân sách hơn nhưng thái độ tốt.",
+      "author_name": "Ngọc Mai",
+      "created_at": "2026-05-14T14:51:30.525Z",
+      "updated_at": "2026-05-14T14:51:30.525Z"
+    },
+    {
+      "id": "49",
+      "agent_id": "67",
+      "reviewer_key": "seed:33:33",
+      "reviewer_user_id": 33,
+      "rating": 4,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Gia Linh",
+      "created_at": "2026-04-11T01:04:00.220Z",
+      "updated_at": "2026-04-11T01:04:00.220Z"
+    },
+    {
+      "id": "50",
+      "agent_id": "76",
+      "reviewer_key": "seed:34:34",
+      "reviewer_user_id": 34,
+      "rating": 5,
+      "comment": "Tư vấn rõ ràng, bám sát nhu cầu và theo suốt quá trình.",
+      "author_name": "Hoang Nam",
+      "created_at": "2026-03-30T07:55:32.467Z",
+      "updated_at": "2026-03-30T07:55:32.467Z"
+    },
+    {
+      "id": "51",
+      "agent_id": "71",
+      "reviewer_key": "seed:35:35",
+      "reviewer_user_id": 35,
+      "rating": 5,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Bảo Châu",
+      "created_at": "2026-05-10T17:36:52.185Z",
+      "updated_at": "2026-05-10T17:36:52.185Z"
+    },
+    {
+      "id": "52",
+      "agent_id": "82",
+      "reviewer_key": "seed:36:36",
+      "reviewer_user_id": 36,
+      "rating": 3,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Anh Thư",
+      "created_at": "2026-03-21T10:47:29.122Z",
+      "updated_at": "2026-03-21T10:47:29.122Z"
+    },
+    {
+      "id": "53",
+      "agent_id": "66",
+      "reviewer_key": "seed:1:37",
+      "reviewer_user_id": null,
+      "rating": 5,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Quản trị hệ thống",
+      "created_at": "2026-02-06T14:43:24.191Z",
+      "updated_at": "2026-02-06T14:43:24.191Z"
+    },
+    {
+      "id": "54",
+      "agent_id": "68",
+      "reviewer_key": "seed:2:38",
+      "reviewer_user_id": null,
+      "rating": 4,
+      "comment": "Hỗ trợ thủ tục ổn, giao tiếp dễ chịu và chuyên nghiệp.",
+      "author_name": "Môi giới demo",
+      "created_at": "2026-03-19T12:10:54.415Z",
+      "updated_at": "2026-03-19T12:10:54.415Z"
+    },
+    {
+      "id": "55",
+      "agent_id": "81",
+      "reviewer_key": "seed:3:39",
+      "reviewer_user_id": 3,
+      "rating": 5,
+      "comment": "Đề xuất sản phẩm hợp lý, có tâm trong việc chăm sóc khách hàng.",
+      "author_name": "Người dùng demo",
+      "created_at": "2026-03-03T15:15:57.610Z",
+      "updated_at": "2026-03-03T15:15:57.610Z"
+    },
+    {
+      "id": "56",
+      "agent_id": "67",
+      "reviewer_key": "seed:4:40",
+      "reviewer_user_id": 4,
+      "rating": 5,
+      "comment": "Phản hồi nhanh, thông tin minh bạch và đi xem nhà đúng giờ.",
+      "author_name": "Kim",
+      "created_at": "2026-04-07T17:36:52.753Z",
+      "updated_at": "2026-04-07T17:36:52.753Z"
+    },
+    {
+      "id": "57",
+      "agent_id": "79",
+      "reviewer_key": "seed:5:41",
+      "reviewer_user_id": 5,
+      "rating": 5,
+      "comment": "Phản hồi nhanh, thông tin minh bạch và đi xem nhà đúng giờ.",
+      "author_name": "Nhai",
+      "created_at": "2026-05-11T16:50:43.602Z",
+      "updated_at": "2026-05-11T16:50:43.602Z"
+    },
+    {
+      "id": "58",
+      "agent_id": "78",
+      "reviewer_key": "seed:6:42",
+      "reviewer_user_id": 6,
+      "rating": 5,
+      "comment": "Hỗ trợ thủ tục ổn, giao tiếp dễ chịu và chuyên nghiệp.",
+      "author_name": "rụ",
+      "created_at": "2026-04-14T06:14:58.802Z",
+      "updated_at": "2026-04-14T06:14:58.802Z"
+    },
+    {
+      "id": "59",
+      "agent_id": "75",
+      "reviewer_key": "seed:7:43",
+      "reviewer_user_id": null,
+      "rating": 5,
+      "comment": "Hỗ trợ thủ tục ổn, giao tiếp dễ chịu và chuyên nghiệp.",
+      "author_name": "Môi giới",
+      "created_at": "2026-04-27T22:46:30.831Z",
+      "updated_at": "2026-04-27T22:46:30.831Z"
+    },
+    {
+      "id": "60",
+      "agent_id": "75",
+      "reviewer_key": "seed:8:44",
+      "reviewer_user_id": null,
+      "rating": 5,
+      "comment": "Làm việc có trách nhiệm, xử lý vấn đề nhanh gọn.",
+      "author_name": "Môi giới demo",
+      "created_at": "2026-03-28T15:49:49.119Z",
+      "updated_at": "2026-03-28T15:49:49.119Z"
     }
   ]
 }

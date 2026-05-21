@@ -1,0 +1,125 @@
+{
+  "hero": {
+    "eye": "Về GeoEstate",
+    "title": "Nền tảng bất động sản",
+    "emphasis": "thế hệ mới",
+    "subtitle": "Kết hợp dữ liệu không gian, WebGIS và trải nghiệm hiện đại để giúp bạn khám phá bất động sản trực quan hơn bao giờ hết."
+  },
+  "stats": [
+    {
+      "number": "2,450+",
+      "label": "Bất động sản"
+    },
+    {
+      "number": "120+",
+      "label": "Môi giới"
+    },
+    {
+      "number": "15K+",
+      "label": "Khách tiềm năng"
+    },
+    {
+      "number": "98%",
+      "label": "Hài lòng"
+    }
+  ],
+  "sections": [
+    {
+      "id": "intro",
+      "eye": "Lời mở đầu",
+      "title": "Câu chuyện của",
+      "accent": "GeoEstate",
+      "image": "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1200&auto=format&fit=crop",
+      "paragraphs": [
+        "Trong thời đại số hóa, việc tìm kiếm bất động sản không còn dừng lại ở những dòng tin đăng đơn giản. Người dùng cần dữ liệu trực quan, minh bạch và có thể khám phá toàn bộ khu vực xung quanh chỉ với vài cú nhấp chuột.",
+        "GeoEstate được xây dựng để giải quyết điều đó — kết hợp WebGIS, bản đồ không gian và dữ liệu bất động sản trong một nền tảng hiện đại."
+      ]
+    },
+    {
+      "id": "mission",
+      "eye": "Sứ mệnh",
+      "title": "Mang trải nghiệm",
+      "accent": "thông minh",
+      "reverse": true,
+      "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1200&auto=format&fit=crop",
+      "paragraphs": [
+        "Chúng tôi giúp khách hàng tìm kiếm bất động sản bằng dữ liệu thực tế thay vì cảm tính. Từ khoảng cách đến trường học, bệnh viện, trung tâm thương mại cho tới tiềm năng khu vực đều được hiển thị trực tiếp trên bản đồ.",
+        "GeoEstate hướng tới một thị trường minh bạch hơn, nơi mọi thông tin đều rõ ràng và dễ tiếp cận."
+      ]
+    },
+    {
+      "id": "values",
+      "eye": "Giá trị cốt lõi",
+      "title": "Điều làm nên",
+      "accent": "khác biệt",
+      "image": "https://images.unsplash.com/photo-1582407947304-fd86f028f716?q=80&w=1200&auto=format&fit=crop",
+      "values": [
+        {
+          "icon": "🗺️",
+          "title": "WebGIS trực quan",
+          "desc": "Hiển thị bất động sản trực tiếp trên bản đồ tương tác."
+        },
+        {
+          "icon": "📍",
+          "title": "Dữ liệu không gian",
+          "desc": "Phân tích khoảng cách và tiện ích lân cận chính xác."
+        },
+        {
+          "icon": "⚡",
+          "title": "Hiệu năng hiện đại",
+          "desc": "Frontend React + Backend Django + PostGIS."
+        },
+        {
+          "icon": "🔒",
+          "title": "Minh bạch",
+          "desc": "Thông tin kiểm duyệt rõ ràng và đáng tin cậy."
+        }
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "year": "2024",
+      "title": "Khởi tạo dự án",
+      "desc": "Xây dựng nền tảng bất động sản tích hợp GIS."
+    },
+    {
+      "year": "2025",
+      "title": "Ra mắt hệ thống WebGIS",
+      "desc": "Triển khai bản đồ tương tác và tìm kiếm bán kính."
+    },
+    {
+      "year": "2026",
+      "title": "Mở rộng CRM",
+      "desc": "Quản lý môi giới, leads và lịch hẹn."
+    }
+  ],
+  "tech": [
+    {
+      "icon": "🗄️",
+      "name": "PostGIS",
+      "desc": "Cơ sở dữ liệu không gian"
+    },
+    {
+      "icon": "🐍",
+      "name": "Django",
+      "desc": "Backend framework"
+    },
+    {
+      "icon": "⚛️",
+      "name": "React",
+      "desc": "Frontend hiện đại"
+    },
+    {
+      "icon": "🗺️",
+      "name": "Leaflet",
+      "desc": "Bản đồ tương tác"
+    }
+  ],
+  "cta": {
+    "eye": "Sẵn sàng chưa?",
+    "title": "Khám phá bất động sản",
+    "emphasis": "ngay hôm nay",
+    "desc": "Hàng nghìn bất động sản đang chờ bạn khám phá trên hệ thống WebGIS."
+  }
+}
