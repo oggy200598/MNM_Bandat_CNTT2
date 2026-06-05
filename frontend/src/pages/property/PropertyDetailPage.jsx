@@ -16,9 +16,24 @@ import "../../App.css";
 
 function ImageUploadForm({ propertyId, onUploaded }) {
   const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl("");
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -39,6 +54,7 @@ function ImageUploadForm({ propertyId, onUploaded }) {
 
     if (result?.id) {
       setFile(null);
+      setPreviewUrl("");
       setCaption("");
       setMessage("Đã tải ảnh lên.");
       onUploaded?.();
@@ -49,21 +65,46 @@ function ImageUploadForm({ propertyId, onUploaded }) {
 
   return (
     <form className="image-upload-form" onSubmit={handleSubmit}>
-      <div className="image-upload-row">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-        />
-        <input
-          type="text"
-          placeholder="Chú thích (caption)"
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-        />
-        <button className="btn-geo-primary" type="submit" disabled={loading}>
-          {loading ? "Đang tải..." : "Tải ảnh lên"}
-        </button>
+      <div className="property-image-uploader">
+        <div className="image-upload-row">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+          <input
+            type="text"
+            placeholder="Chú thích (caption)"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+          />
+          <button className="btn-geo-primary" type="submit" disabled={loading}>
+            {loading ? "Đang tải..." : "Tải ảnh lên"}
+          </button>
+        </div>
+
+        {previewUrl && (
+          <div className="property-image-preview-grid mt-3">
+            <article className="property-image-preview-card">
+              <div
+                className="property-image-preview-thumb"
+                style={{ backgroundImage: `url(${previewUrl})` }}
+              >
+                <span>Xem trước</span>
+              </div>
+              <div className="property-image-preview-body">
+                <strong>{file?.name || "Ảnh đã chọn"}</strong>
+                <button
+                  type="button"
+                  className="btn-geo-secondary"
+                  onClick={() => setFile(null)}
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            </article>
+          </div>
+        )}
       </div>
       {message && <p className="muted-line">{message}</p>}
     </form>
@@ -204,6 +245,8 @@ function RouteMap({ destination, origin, routeGeometry }) {
 
 export default function PropertyDetailPage() {
   const [property, setProperty] = usePropertyDetail();
+  const [authUser, setAuthUser] = useState(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(null);
   const [reviewRating, setReviewRating] = useState("5");
   const [reviewComment, setReviewComment] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
@@ -216,9 +259,72 @@ export default function PropertyDetailPage() {
   const [routeRequestKey, setRouteRequestKey] = useState(0);
   const p = normalizeProperty(property);
   const images = property?.images?.length ? property.images : [{ image: p.imageUrl, caption: p.title, is_primary: true }];
-  const currentUser = JSON.parse(localStorage.getItem("user") || "null");
-  const canManageImages = currentUser && ["agent", "admin"].includes(currentUser.role);
+  const canUseWishlist = Boolean(authUser);
+  const propertyAgentId = property?.agent?.id ?? property?.agent_id ?? null;
+  const linkedAgentId = authUser?.linked_agent_id ?? authUser?.linkedAgentId ?? null;
+  const canManageImages =
+    authUser?.role === "admin" ||
+    (authUser?.role === "agent" &&
+      propertyAgentId !== null &&
+      linkedAgentId !== null &&
+      String(propertyAgentId) === String(linkedAgentId));
   const [imageMessage, setImageMessage] = useState("");
+  const activeImage =
+    activeImageIndex === null
+      ? null
+      : images[activeImageIndex] || null;
+
+  useEffect(() => {
+    let active = true;
+
+    async function syncAuthUser() {
+      if (!api.getToken()) {
+        localStorage.removeItem("user");
+        if (active) {
+          setAuthUser(null);
+        }
+        return;
+      }
+
+      const me = await api.me();
+
+      if (!active) return;
+
+      if (me) {
+        setAuthUser(me);
+        localStorage.setItem("user", JSON.stringify(me));
+        window.dispatchEvent(new Event("auth-changed"));
+        return;
+      }
+
+      localStorage.removeItem("user");
+      setAuthUser(null);
+    }
+
+    syncAuthUser();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeImageIndex === null) {
+      return undefined;
+    }
+
+    const handleKeydown = (event) => {
+      if (event.key === "Escape") {
+        setActiveImageIndex(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeydown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  }, [activeImageIndex]);
 
   async function refreshImages() {
     const data = await api.property(property.id);
@@ -343,9 +449,7 @@ export default function PropertyDetailPage() {
   }, [destination, routeOrigin, routeMode, routeRequestKey]);
 
   async function submitReview() {
-    const currentUser = JSON.parse(localStorage.getItem("user") || "null");
-
-    if (!currentUser) {
+    if (!authUser) {
       setReviewMessage("Bạn cần đăng nhập để gửi đánh giá môi giới.");
       return;
     }
@@ -361,7 +465,7 @@ export default function PropertyDetailPage() {
     const result = await api.createAgentReview(property.agent.id, {
       rating: reviewRating,
       comment: reviewComment,
-      author_name: currentUser?.full_name || currentUser?.username || "Khách vãng lai",
+      author_name: authUser?.full_name || authUser?.username || "Khách vãng lai",
     });
 
     setReviewLoading(false);
@@ -462,7 +566,9 @@ export default function PropertyDetailPage() {
             <h1 className="section-heading">{p.title}</h1>
             <p className="extra-desc">📍 {p.address}</p>
             <div className="mini-actions" style={{ marginBottom: 16 }}>
-              <button className="btn-geo-secondary" type="button" onClick={async () => await api.toggleWishlist(property.id)}>Lưu / Bỏ lưu</button>
+              {canUseWishlist && (
+                <button className="btn-geo-secondary" type="button" onClick={async () => await api.toggleWishlist(property.id)}>Lưu / Bỏ lưu</button>
+              )}
               <button className="btn-geo-secondary" type="button" onClick={async () => await api.toggleCompare(property.id)}>So sánh</button>
             </div>
             <div className="detail-stat-grid">
@@ -494,7 +600,13 @@ export default function PropertyDetailPage() {
             <div className="mini-grid media-grid">
               {images.map((img, index) => (
                 <article className="mini-property-card" key={`${img.id || index}-${index}`}>
-                  <div className="mini-media" style={{ backgroundImage: `url(${img.image})` }} />
+                  <button
+                    type="button"
+                    className="mini-media mini-media-button"
+                    style={{ backgroundImage: `url(${img.image})` }}
+                    onClick={() => setActiveImageIndex(index)}
+                    aria-label={`Xem lớn ảnh ${img.caption || p.title}`}
+                  />
                   <div className="mini-content">
                     <p>{img.caption || p.title}</p>
                     {canManageImages && (
@@ -593,9 +705,11 @@ export default function PropertyDetailPage() {
       Liên hệ tư vấn
     </a>
 
-    <a className="btn-geo-secondary full" href="/wishlist">
-      Lưu tin
-    </a>
+    {canUseWishlist && (
+      <a className="btn-geo-secondary full" href="/wishlist">
+        Lưu tin
+      </a>
+    )}
 
     <button className="btn-geo-secondary full" type="button" onClick={findRouteOnWeb} disabled={!destination || routeLoading}>
       Tìm đường trên web
@@ -779,8 +893,39 @@ export default function PropertyDetailPage() {
     )}
   </div>
 
-</aside>
+        </aside>
       </main>
+      {activeImage && (
+        <div
+          className="property-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Xem ảnh bất động sản"
+          onClick={() => setActiveImageIndex(null)}
+        >
+          <div
+            className="property-lightbox-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="property-lightbox-close"
+              onClick={() => setActiveImageIndex(null)}
+              aria-label="Đóng ảnh lớn"
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
+            <img
+              className="property-lightbox-image"
+              src={activeImage.image}
+              alt={activeImage.caption || p.title}
+            />
+            <div className="property-lightbox-caption">
+              {activeImage.caption || p.title}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -126,11 +126,12 @@ async function propertyCreate(
     res.status(201).json({
       data:
         await service.createProperty(
-          req.body
+          req.body,
+          req.user
         )
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.status || 400).json({
       error: err.message
     });
   }
@@ -144,7 +145,8 @@ async function propertyUpdate(
     const data =
       await service.updateProperty(
         req.params.id,
-        req.body
+        req.body,
+        req.user
       );
 
     if (!data) {
@@ -158,7 +160,7 @@ async function propertyUpdate(
       data
     });
   } catch (err) {
-    res.status(500).json({
+    res.status(err.status || 500).json({
       error: err.message
     });
   }
@@ -173,7 +175,8 @@ async function propertyStageUpdate(
       await service.updatePropertyStage(
         req.params.id,
         req.body.listing_status ||
-          req.body.status
+          req.body.status,
+        req.user
       );
 
     if (!data) {
@@ -187,7 +190,7 @@ async function propertyStageUpdate(
       data
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.status || 400).json({
       error: err.message
     });
   }
@@ -200,7 +203,8 @@ async function propertyDelete(
   try {
     const ok =
       await service.deleteProperty(
-        req.params.id
+        req.params.id,
+        req.user
       );
 
     if (!ok) {
@@ -214,7 +218,7 @@ async function propertyDelete(
       ok: true
     });
   } catch (err) {
-    res.status(500).json({
+    res.status(err.status || 500).json({
       error: err.message
     });
   }
@@ -247,11 +251,12 @@ async function propertyImageCreate(
       data:
         await service.createPropertyImage(
           req.params.id,
-          req.body
+          req.body,
+          req.user
         )
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.status || 400).json({
       error: err.message
     });
   }
@@ -264,7 +269,8 @@ async function propertyImagePrimary(
   try {
     const data =
       await service.setPrimaryImage(
-        req.params.imageId
+        req.params.imageId,
+        req.user
       );
 
     if (!data) {
@@ -277,7 +283,7 @@ async function propertyImagePrimary(
       data
     });
   } catch (err) {
-    res.status(500).json({
+    res.status(err.status || 500).json({
       error: err.message
     });
   }
@@ -290,7 +296,8 @@ async function propertyImageDelete(
   try {
     const ok =
       await service.deletePropertyImage(
-        req.params.imageId
+        req.params.imageId,
+        req.user
       );
 
     if (!ok) {
@@ -303,7 +310,7 @@ async function propertyImageDelete(
       ok: true
     });
   } catch (err) {
-    res.status(500).json({
+    res.status(err.status || 500).json({
       error: err.message
     });
   }
@@ -317,7 +324,8 @@ async function propertyImageReorder(
     const data =
       await service.reorderPropertyImage(
         req.params.imageId,
-        req.body.sort_order
+        req.body.sort_order,
+        req.user
       );
 
     if (!data) {
@@ -330,7 +338,7 @@ async function propertyImageReorder(
       data
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.status || 400).json({
       error: err.message
     });
   }

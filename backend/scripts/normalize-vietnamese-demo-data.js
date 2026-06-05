@@ -103,7 +103,9 @@ async function normalizeAmenities() {
 
   let updated = 0;
   for (const row of result.rows) {
-    const nextName = viText(row.name);
+    const nextName = viText(row.name)
+      .replace(/\s+\d+\s*$/, "")
+      .trim();
     const nextCategory = viText(row.category);
     if (nextName !== row.name || nextCategory !== row.category) {
       await pool.query(

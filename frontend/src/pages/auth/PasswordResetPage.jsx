@@ -38,7 +38,7 @@ export default function PasswordResetPage() {
         className="container py-5"
         style={{ maxWidth: "640px" }}
       >
-        <div className="extra-card p-4 p-md-5">
+        <div className="extra-card card border-0 shadow-sm p-4 p-md-5">
           <h1 className="section-heading mb-4">
             Quên mật khẩu?
           </h1>
@@ -55,6 +55,7 @@ export default function PasswordResetPage() {
               <input
                 type="email"
                 name="email"
+                className="form-control"
                 placeholder="name@example.com"
                 required
               />
@@ -62,7 +63,7 @@ export default function PasswordResetPage() {
 
             <button
               type="submit"
-              className="btn-geo-primary"
+              className="btn-geo-primary btn btn-primary"
               disabled={loading}
             >
               {loading
@@ -73,7 +74,7 @@ export default function PasswordResetPage() {
 
           {message && (
             <div
-              className="alert-box"
+              className="alert alert-warning"
               style={{
                 marginTop: "20px",
               }}

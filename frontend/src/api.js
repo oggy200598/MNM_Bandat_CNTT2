@@ -26,9 +26,14 @@ client.interceptors.request.use((config) => {
 });
 
 export const fallbackImages = [
-  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1448630360428-65456885c650?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1600607687644-c7f34be3c2f4?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1501183638710-841dd1904471?q=80&w=1200&auto=format&fit=crop",
 ];
 
 export function formatPrice(value) {
@@ -77,6 +82,54 @@ async function fileToDataUrl(file) {
   });
 }
 
+async function compressImageFile(file, options = {}) {
+  const {
+    maxWidth = 1600,
+    maxHeight = 1600,
+    quality = 0.82,
+    mimeType = "image/webp",
+  } = options;
+
+  if (!(file instanceof File) || !String(file.type || "").startsWith("image/")) {
+    return fileToDataUrl(file);
+  }
+
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onload = () => {
+        const widthRatio = maxWidth / image.width;
+        const heightRatio = maxHeight / image.height;
+        const ratio = Math.min(1, widthRatio, heightRatio);
+        const targetWidth = Math.max(1, Math.round(image.width * ratio));
+        const targetHeight = Math.max(1, Math.round(image.height * ratio));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+          resolve(reader.result);
+          return;
+        }
+
+        context.drawImage(image, 0, 0, targetWidth, targetHeight);
+        resolve(canvas.toDataURL(mimeType, quality));
+      };
+
+      image.onerror = () => resolve(reader.result);
+      image.src = String(reader.result);
+    };
+
+    reader.onerror = () => reject(reader.error || new Error("Failed to read image file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export const api = {
   health: () => unwrap(client.get("/health"), { ok: false }),
   properties: (params) => unwrap(client.get("/properties", { params }), []),
@@ -92,7 +145,7 @@ export const api = {
   createPropertyImage: async (id, payload) => {
     if (payload?.file instanceof File) {
       const file = payload.file;
-      const dataUrl = await fileToDataUrl(file);
+      const dataUrl = await compressImageFile(file);
       return unwrap(client.post(`/properties/${id}/images`, { ...payload, file: dataUrl, fileName: file.name }), null);
     }
     return unwrap(client.post(`/properties/${id}/images`, payload), null);

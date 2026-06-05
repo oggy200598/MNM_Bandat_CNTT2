@@ -152,11 +152,15 @@ export function mapProperty(
 export function mapAmenity(
   row
 ) {
+  const cleanedName =
+    String(row.name || "")
+      .replace(/\s+\d+\s*$/, "")
+      .trim();
 
   return {
     id: row.id,
     name:
-      row.name,
+      cleanedName || row.name,
     type:
       row.amenity_type,
     amenity_type:

@@ -159,6 +159,95 @@ function haversineKm(
   );
 }
 
+function createHttpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+function getActingAgentId(authUser) {
+  if (!authUser?.id) {
+    return null;
+  }
+
+  const fullUser = authStore.findById(authUser.id);
+  return fullUser?.linked_agent_id ?? null;
+}
+
+async function getPropertyOwnership(propertyId) {
+  const result = await pool.query(
+    `
+    SELECT id, agent_id
+    FROM properties_property
+    WHERE id = $1
+    `,
+    [propertyId]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function getImageOwnership(imageId) {
+  const result = await pool.query(
+    `
+    SELECT img.id, img.property_id, prop.agent_id
+    FROM properties_propertyimage img
+    JOIN properties_property prop
+      ON prop.id = img.property_id
+    WHERE img.id = $1
+    `,
+    [imageId]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function assertCanManageProperty(propertyId, authUser) {
+  const property = await getPropertyOwnership(propertyId);
+
+  if (!property) {
+    throw createHttpError(404, "Property not found");
+  }
+
+  if (authUser?.role === "admin") {
+    return property;
+  }
+
+  const actingAgentId = getActingAgentId(authUser);
+  if (!actingAgentId) {
+    throw createHttpError(403, "Forbidden");
+  }
+
+  if (String(property.agent_id) !== String(actingAgentId)) {
+    throw createHttpError(403, "Forbidden");
+  }
+
+  return property;
+}
+
+async function assertCanManageImage(imageId, authUser) {
+  const image = await getImageOwnership(imageId);
+
+  if (!image) {
+    throw createHttpError(404, "Image not found");
+  }
+
+  if (authUser?.role === "admin") {
+    return image;
+  }
+
+  const actingAgentId = getActingAgentId(authUser);
+  if (!actingAgentId) {
+    throw createHttpError(403, "Forbidden");
+  }
+
+  if (String(image.agent_id) !== String(actingAgentId)) {
+    throw createHttpError(403, "Forbidden");
+  }
+
+  return image;
+}
+
 function averageCenter(
   items
 ) {
@@ -1181,8 +1270,24 @@ async function getPropertyById(
 }
 
 async function createProperty(
-  payload
+  payload,
+  authUser = null
 ) {
+  const actingAgentId =
+    authUser?.role === "admin"
+      ? payload.agent_id ?? null
+      : getActingAgentId(authUser);
+
+  if (
+    authUser?.role === "agent" &&
+    !actingAgentId
+  ) {
+    throw createHttpError(
+      403,
+      "Forbidden"
+    );
+  }
+
   const {
     title,
     description = "",
@@ -1191,7 +1296,7 @@ async function createProperty(
     price = null,
     area = null,
     address = "",
-    agent_id = null,
+    agent_id = actingAgentId,
     is_featured = false,
     lat = DEFAULT_LAT,
     lng = DEFAULT_LNG
@@ -1261,8 +1366,14 @@ async function createProperty(
 
 async function updateProperty(
   id,
-  payload
+  payload,
+  authUser = null
 ) {
+  await assertCanManageProperty(
+    id,
+    authUser
+  );
+
   const current =
     await pool.query(
       `
@@ -1345,8 +1456,14 @@ async function updateProperty(
 
 async function updatePropertyStage(
   id,
-  listing_status
+  listing_status,
+  authUser = null
 ) {
+  await assertCanManageProperty(
+    id,
+    authUser
+  );
+
   const result =
     await pool.query(
       `
@@ -1369,8 +1486,14 @@ async function updatePropertyStage(
 }
 
 async function deleteProperty(
-  id
+  id,
+  authUser = null
 ) {
+  await assertCanManageProperty(
+    id,
+    authUser
+  );
+
   const client =
     await pool.connect();
 
@@ -1423,8 +1546,14 @@ async function deleteProperty(
 
 async function createPropertyImage(
   propertyId,
-  payload
+  payload,
+  authUser = null
 ) {
+  await assertCanManageProperty(
+    propertyId,
+    authUser
+  );
+
   const imagePath =
     saveBase64File(
       payload,
@@ -1491,8 +1620,14 @@ async function createPropertyImage(
 }
 
 async function setPrimaryImage(
-  imageId
+  imageId,
+  authUser = null
 ) {
+  await assertCanManageImage(
+    imageId,
+    authUser
+  );
+
   const current =
     await pool.query(
       `
@@ -1546,8 +1681,14 @@ async function setPrimaryImage(
 }
 
 async function deletePropertyImage(
-  imageId
+  imageId,
+  authUser = null
 ) {
+  await assertCanManageImage(
+    imageId,
+    authUser
+  );
+
   const result =
     await pool.query(
       `
@@ -1564,8 +1705,14 @@ async function deletePropertyImage(
 
 async function reorderPropertyImage(
   imageId,
-  sortOrder
+  sortOrder,
+  authUser = null
 ) {
+  await assertCanManageImage(
+    imageId,
+    authUser
+  );
+
   const result =
     await pool.query(
       `
@@ -2651,7 +2798,11 @@ async function register(
   payload
 ) {
   return authStore.createUser(
-    payload
+    {
+      ...payload,
+      role: "user",
+      linked_agent_id: null
+    }
   );
 }
 

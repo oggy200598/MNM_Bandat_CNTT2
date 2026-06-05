@@ -14,7 +14,7 @@ const fallbackProperties = [
     type: "apartment",
     status: "Đang bán",
     agent: "Nguyễn Văn A",
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1502672023488-70e25813eb80?q=80&w=1200&auto=format&fit=crop",
     desc: "Căn hộ trung tâm, view thành phố, tiện ích đầy đủ và kết nối giao thông thuận tiện.",
   },
   {
@@ -26,7 +26,7 @@ const fallbackProperties = [
     type: "house",
     status: "Nổi bật",
     agent: "Trần Thị B",
-    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=1200&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1200&auto=format&fit=crop",
     desc: "Nhà phố khu dân cư cao cấp, phù hợp ở hoặc đầu tư cho thuê dài hạn.",
   },
   {
@@ -38,7 +38,7 @@ const fallbackProperties = [
     type: "land",
     status: "Mới",
     agent: "Lê Văn C",
-    image: "https://images.unsplash.com/photo-1448630360428-65456885c650?q=80&w=1200&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop",
     desc: "Đất nền diện tích lớn, pháp lý rõ ràng, phù hợp xây nhà vườn hoặc đầu tư.",
   },
 ];
@@ -102,7 +102,7 @@ function PageHero({ eyebrow, title, desc, actions }) {
           <h1 className="page-title">{title}</h1>
           {desc && <p className="page-desc">{desc}</p>}
         </div>
-        {actions && <div className="hero-actions-right">{actions}</div>}
+        {actions && <div className="hero-actions-right d-flex flex-wrap gap-2 justify-content-start justify-content-lg-end">{actions}</div>}
       </div>
     </section>
   );
@@ -360,13 +360,7 @@ function PropertyCard({
     onClick={(event) => {
       event.preventDefault();
       event.stopPropagation();
-
-      if (!wishlistActive) {
-        window.location.href = "/wishlist";
-      }
-
       onWishlist(property);
-
     }}
   >
     {wishlistActive
@@ -375,20 +369,6 @@ function PropertyCard({
   </button>
 )}
 
-
-  {canDelete && onDelete && (
-    <button
-      type="button"
-      className="btn-geo-secondary danger-btn"
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        onDelete(property);
-      }}
-    >
-      Xóa
-    </button>
-  )}
 
 </div>
       </div>
@@ -488,8 +468,8 @@ function PaginationControls({ pagination, onPageChange, loading }) {
   }
 
   return (
-    <nav className="pagination-bar" aria-label="Phan trang bat dong san">
-      <button type="button" className="btn-geo-secondary" onClick={() => onPageChange(currentPage - 1)} disabled={!pagination.hasPrev || loading}>
+    <nav className="pagination-bar d-flex align-items-center flex-wrap gap-2" aria-label="Phan trang bat dong san">
+      <button type="button" className="btn-geo-secondary btn btn-outline-secondary" onClick={() => onPageChange(currentPage - 1)} disabled={!pagination.hasPrev || loading}>
         Trước
       </button>
       {start > 1 && (
@@ -513,7 +493,7 @@ function PaginationControls({ pagination, onPageChange, loading }) {
           </button>
         </>
       )}
-      <button type="button" className="btn-geo-secondary" onClick={() => onPageChange(currentPage + 1)} disabled={!pagination.hasNext || loading}>
+      <button type="button" className="btn-geo-secondary btn btn-outline-secondary" onClick={() => onPageChange(currentPage + 1)} disabled={!pagination.hasNext || loading}>
         Sau
       </button>
     </nav>
@@ -525,6 +505,7 @@ export function PropertyListPage() {
   const resultsRef = useRef(null);
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
   const isAdmin = currentUser?.role === "admin";
+  const canCreateProperty = ["agent", "admin"].includes(currentUser?.role);
   const [items, setItems] = useState(fallbackProperties);
   const [actionMessage, setActionMessage] = useState("");
   const [mapData, setMapData] = useState({ items: [], center: { lat: 10.7769, lng: 106.7009 } });
@@ -712,7 +693,14 @@ useEffect(() => {
         eyebrow="Danh sách bất động sản"
         title="Khám phá bất động sản"
         desc="Danh sách, bản đồ và bộ lọc đang nối trực tiếp vào backend Node.js."
-        actions={<><a href="/properties/create" className="btn-geo-secondary">Đăng tin mới</a><a href="/nearby" className="btn-geo-secondary">Tìm quanh đây</a><a href="/compare" className="btn-geo-primary">So sánh hiện tại</a><button type="button" className="btn-geo-secondary" onClick={saveSearch}>Lưu bộ lọc</button></>}
+        actions={
+          <>
+            {canCreateProperty && <a href="/properties/create" className="btn-geo-secondary btn btn-outline-secondary">Đăng tin mới</a>}
+            <a href="/nearby" className="btn-geo-secondary btn btn-outline-secondary">Tìm quanh đây</a>
+            <a href="/compare" className="btn-geo-primary btn btn-primary">So sánh hiện tại</a>
+            {currentUser && <button type="button" className="btn-geo-secondary btn btn-outline-secondary" onClick={saveSearch}>Lưu bộ lọc</button>}
+          </>
+        }
       />
       <div className="container list-layout">
         <FilterPanel filters={filters} onChange={handleChange} onSubmit={handleSubmit} onReset={handleReset} />
@@ -780,12 +768,12 @@ useEffect(() => {
                 key={property.id}
                 onDelete={isAdmin ? handleDelete : undefined}
                 canDelete={isAdmin}
-                onWishlist={toggleWishlist}
+                onWishlist={currentUser ? toggleWishlist : undefined}
                 wishlistActive={wishlistIds.includes(property.id)}
                 onCompare={toggleCompare}
                 compareActive={compareIds.includes(property.id)}
-                canManageStatus={isAdmin}
-                onStageChange={isAdmin ? handleStageChange : undefined}
+                canManageStatus={false}
+                onStageChange={undefined}
               />
             ))}
           </div>
@@ -793,7 +781,43 @@ useEffect(() => {
           <div className="results-footer">
             <PaginationControls pagination={pagination} loading={loading} onPageChange={(page) => loadItems(filters, bbox, page)} />
           </div>
-          {savedSearches.length > 0 && <section className="map-card"><div className="map-card-header"><div><div className="map-card-title">Bộ lọc đã lưu</div><p>{savedSearches.length} bộ lọc</p></div></div><div className="amenity-grid">{savedSearches.map((item) => <article className="amenity-card" key={item.id}><h6>{item.name}</h6><p className="listing-desc">{Object.entries(item.filters || {}).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join(' · ') || 'Không có điều kiện'}</p><div className="listing-actions"><button type="button" className="btn-geo-secondary" onClick={async () => { await api.deleteSavedSearch(item.id); setSavedSearches((prev) => prev.filter((row) => row.id !== item.id)); }}>Xóa</button></div></article>)}</div></section>}
+          {savedSearches.length > 0 && (
+            <section className="map-card">
+              <div className="map-card-header">
+                <div>
+                  <div className="map-card-title">Bộ lọc đã lưu</div>
+                  <p>{savedSearches.length} bộ lọc</p>
+                </div>
+              </div>
+              <div className="row g-3">
+                {savedSearches.map((item) => (
+                  <div className="col-12 col-md-6 col-xl-4" key={item.id}>
+                    <article className="amenity-card h-100">
+                      <h6>{item.name}</h6>
+                      <p className="listing-desc">
+                        {Object.entries(item.filters || {})
+                          .filter(([, value]) => value)
+                          .map(([key, value]) => `${key}: ${value}`)
+                          .join(" · ") || "Không có điều kiện"}
+                      </p>
+                      <div className="listing-actions">
+                        <button
+                          type="button"
+                          className="btn-geo-secondary btn btn-outline-secondary"
+                          onClick={async () => {
+                            await api.deleteSavedSearch(item.id);
+                            setSavedSearches((prev) => prev.filter((row) => row.id !== item.id));
+                          }}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </article>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </main>
       </div>
     </div>

@@ -11,9 +11,9 @@
   --gold-pale: #f5edd9;
 
   /* Backgrounds */
-  --bg: #f5f7fb;
+  --bg: #ffffff;
   --bg-2: #ffffff;
-  --bg-3: #f8fafc;
+  --bg-3: #f7f8fa;
   --bg-card: #ffffff;
 
   /* Text */
@@ -2053,6 +2053,97 @@ img { max-width: 100%; display: block; }
 .amenity-card h3 { font-size: 1.3rem; margin-bottom: 10px; }
 .amenity-card p  { color: #6d6258; line-height: 1.7; }
 
+.mini-media-button {
+  width: 100%;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.mini-media-button::before {
+  content: "Xem lớn";
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(12, 15, 26, 0.72);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.mini-property-card:hover .mini-media-button::before,
+.mini-media-button:focus-visible::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mini-media-button:focus-visible {
+  outline: 3px solid rgba(200, 169, 110, .35);
+  outline-offset: 2px;
+}
+
+.property-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 14, 24, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.property-lightbox-dialog {
+  position: relative;
+  width: min(100%, 1040px);
+  max-height: calc(100vh - 48px);
+  padding: 18px 18px 14px;
+  border-radius: 28px;
+  background: #fffdfa;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, .24);
+}
+
+.property-lightbox-image {
+  display: block;
+  width: 100%;
+  max-height: calc(100vh - 140px);
+  object-fit: contain;
+  border-radius: 20px;
+  background: #f4efe6;
+}
+
+.property-lightbox-caption {
+  margin-top: 12px;
+  color: #5f5548;
+  font-size: 14px;
+  text-align: center;
+}
+
+.property-lightbox-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(12, 15, 26, 0.72);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.property-lightbox-close:hover {
+  background: rgba(12, 15, 26, 0.9);
+}
+
 /* ======================
    TESTIMONIALS
 ====================== */
@@ -3400,9 +3491,9 @@ img { max-width: 100%; display: block; }
   --gold-pale: #f5edd9;
 
   /* Backgrounds */
-  --bg: #f5f7fb;
+  --bg: #ffffff;
   --bg-2: #ffffff;
-  --bg-3: #f8fafc;
+  --bg-3: #f7f8fa;
   --bg-card: #ffffff;
 
   /* Text */

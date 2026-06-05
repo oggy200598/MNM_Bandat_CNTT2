@@ -25,7 +25,6 @@ export default function RegisterPage() {
       username: form.get("username"),
       full_name: form.get("full_name"),
       email: form.get("email"),
-      role: form.get("role"),
       password,
     };
 
@@ -67,7 +66,7 @@ export default function RegisterPage() {
         className="container py-5"
         style={{ maxWidth: "760px" }}
       >
-        <div className="extra-card p-4 p-md-5">
+        <div className="extra-card card border-0 shadow-sm p-4 p-md-5">
           <p className="section-eyebrow">
             Tạo tài khoản
           </p>
@@ -86,6 +85,7 @@ export default function RegisterPage() {
               <input
                 type="text"
                 name="username"
+                className="form-control"
                 placeholder="Nhập tài khoản"
                 required
               />
@@ -97,6 +97,7 @@ export default function RegisterPage() {
               <input
                 type="text"
                 name="full_name"
+                className="form-control"
               />
             </label>
 
@@ -106,22 +107,9 @@ export default function RegisterPage() {
               <input
                 type="email"
                 name="email"
+                className="form-control"
                 placeholder="name@example.com"
               />
-            </label>
-
-            <label className="extra-field">
-              <span>Vai trò</span>
-
-              <select name="role">
-                <option value="user">
-                  Khách hàng
-                </option>
-
-                <option value="agent">
-                  Môi giới
-                </option>
-              </select>
             </label>
 
             <label className="extra-field">
@@ -130,6 +118,7 @@ export default function RegisterPage() {
               <input
                 type="password"
                 name="password"
+                className="form-control"
                 required
               />
             </label>
@@ -140,13 +129,14 @@ export default function RegisterPage() {
               <input
                 type="password"
                 name="confirm_password"
+                className="form-control"
                 required
               />
             </label>
 
             {message && (
               <div className="form-wide">
-                <div className="alert-box">
+                <div className="alert alert-warning mb-0">
                   {message}
                 </div>
               </div>
@@ -154,7 +144,7 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              className="btn-geo-primary form-wide"
+              className="btn-geo-primary btn btn-primary form-wide"
             >
               Tạo tài khoản
             </button>

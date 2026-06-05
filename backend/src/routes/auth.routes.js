@@ -257,10 +257,8 @@ router.post(
             req.body.email,
           full_name:
             req.body.full_name,
-          role:
-            req.body.role,
-          linked_agent_id:
-            req.body.linked_agent_id,
+          role: "user",
+          linked_agent_id: null,
           password:
             req.body.password
         });

@@ -2,8 +2,9 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-
-
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "./bootstrap-bridge.css";
 import "./index.css";
 import App from "./App.jsx";
 import { api } from "./api.js";
@@ -26,13 +27,16 @@ function Layout({ children }) {
   });
   const [apiHealthy, setApiHealthy] = useState(true);
 
+  const role = user?.role || "guest";
   const isAdmin =
-    user?.role === "admin";
+    role === "admin";
   const isAgent =
-    user?.role === "agent";
+    role === "agent";
   const isCustomer =
-    user?.role === "user" ||
-    user?.role === "customer";
+    role === "user" ||
+    role === "customer";
+  const isAuthenticated =
+    role !== "guest";
 
   const dashboardHref =
     isAdmin
@@ -40,17 +44,56 @@ function Layout({ children }) {
       : isAgent
       ? "/dashboard"
       : "/customer-dashboard";
-  const quickLinks = [
-    { href: "/properties", icon: "bi-grid-3x3-gap", label: "Bất động sản" },
-    { href: "/nearby", icon: "bi-geo-alt", label: "Tìm quanh đây" },
-    { href: "/amenities", icon: "bi-stars", label: "Tiện ích" },
-    { href: "/compare", icon: "bi-columns-gap", label: "So sánh" },
+  const showWishlistShortcut =
+    isCustomer;
+  const exploreMenuItems = [
+    { href: "/properties", label: "Tất cả bất động sản" },
+    { href: "/nearby", label: "Tìm quanh đây" },
+    { href: "/amenities", label: "Tiện ích lân cận" },
+    { href: "/compare", label: "So sánh hiện tại" },
+    ...(isCustomer
+      ? [
+          { href: "/lead-form", label: "Gửi nhu cầu tư vấn" },
+          { href: "/appointments/create", label: "Tạo lịch hẹn" },
+        ]
+      : []),
   ];
-  const accountLinks = user
+  const userMenuItems = isAuthenticated
+    ? [
+        { href: "/profile", icon: "bi-person", label: "Hồ sơ cá nhân" },
+        { href: dashboardHref, icon: "bi-speedometer2", label: "Trang tổng quan" },
+        ...(isCustomer
+          ? [
+              { href: "/wishlist", icon: "bi-heart", label: "Tin đã lưu" },
+              { href: "/lead-form", icon: "bi-chat-left-text", label: "Gửi yêu cầu tư vấn" },
+              { href: "/appointments/create", icon: "bi-calendar-event", label: "Tạo lịch hẹn" },
+            ]
+          : []),
+        ...(isAgent || isAdmin
+          ? [
+              {
+                href: "/properties/create",
+                icon: "bi-plus-square",
+                label: "Đăng tin mới",
+                dividerBefore: true,
+              },
+            ]
+          : []),
+        ...(isAdmin
+          ? [
+              { href: "/admin-dashboard", icon: "bi-grid-1x2", label: "Dashboard quản trị" },
+              { href: "/admin-console", icon: "bi-sliders", label: "Admin Console" },
+            ]
+          : []),
+      ]
+    : [];
+  const accountLinks = isAuthenticated
     ? [
         { href: "/profile", icon: "bi-person", label: "Hồ sơ" },
         { href: dashboardHref, icon: "bi-speedometer2", label: "Dashboard" },
-        { href: "/wishlist", icon: "bi-heart", label: "Tin đã lưu" },
+        ...(isCustomer ? [{ href: "/wishlist", icon: "bi-heart", label: "Tin đã lưu" }] : []),
+        ...(isAgent || isAdmin ? [{ href: "/properties/create", icon: "bi-plus-square", label: "Đăng tin mới" }] : []),
+        ...(isAdmin ? [{ href: "/admin-console", icon: "bi-sliders", label: "Admin Console" }] : []),
       ]
     : [
         { href: "/login", icon: "bi-box-arrow-in-right", label: "Đăng nhập" },
@@ -116,7 +159,7 @@ function Layout({ children }) {
 
       metaTheme.name = "theme-color";
 
-      metaTheme.content = "#0C0F1A";
+      metaTheme.content = "#FFFFFF";
 
       document.head.appendChild(metaTheme);
     }
@@ -139,64 +182,16 @@ function Layout({ children }) {
       document.head.appendChild(link);
     }
 
-    /* ── THEME ── */
     const root = document.documentElement;
+    root.setAttribute("data-theme", "light");
+    root.setAttribute("data-bs-theme", "light");
 
-    const STORAGE = "geo_theme";
+    localStorage.removeItem("geo_theme");
 
-    function setTheme(theme) {
-      root.setAttribute("data-theme", theme);
-
-      root.setAttribute("data-bs-theme", theme);
-
-      localStorage.setItem(STORAGE, theme);
-
-      const metaThemeTag = document.querySelector('meta[name="theme-color"]');
-      if (metaThemeTag) {
-        metaThemeTag.setAttribute(
-          "content",
-          theme === "dark" ? "#0C0F1A" : "#F5F3EE"
-        );
-      }
-
-      const btn =
-        document.getElementById("themeToggle");
-
-      if (btn) {
-        btn.innerHTML =
-          theme === "light"
-            ? '<i class="bi bi-moon-stars"></i>'
-            : '<i class="bi bi-sun"></i>';
-      }
+    const metaThemeTag = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeTag) {
+      metaThemeTag.setAttribute("content", "#FFFFFF");
     }
-
-    const saved = localStorage.getItem(STORAGE);
-
-    if (saved) {
-      setTheme(saved);
-    } else {
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-
-      setTheme(prefersDark ? "dark" : "light");
-    }
-
-    const btn =
-      document.getElementById("themeToggle");
-
-    const toggleTheme = () => {
-      const current =
-        root.getAttribute("data-theme") || "dark";
-
-      setTheme(
-        current === "dark"
-          ? "light"
-          : "dark"
-      );
-    };
-
-    btn?.addEventListener("click", toggleTheme);
 
     /* ── SCROLL TOP ── */
     const scrollBtn =
@@ -271,11 +266,6 @@ function Layout({ children }) {
 
     /* CLEANUP */
     return () => {
-      btn?.removeEventListener(
-        "click",
-        toggleTheme
-      );
-
       scrollBtn?.removeEventListener(
         "click",
         scrollTop
@@ -397,96 +387,38 @@ function Layout({ children }) {
                 </a>
               </li>
 
-              <li className="nav-item dropdown">
-                <a
-                  className="nav-link dropdown-toggle"
-                  href="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
+              <li className="nav-item nav-dropdown">
+                <button
+                  type="button"
+                  className="nav-link nav-dropdown-trigger"
                 >
                   Khám phá
-                </a>
+                </button>
 
                 <ul
-                  className="dropdown-menu border-0 shadow-sm"
-                  style={{
-                    borderRadius: "14px",
-                    padding: "10px",
-                    minWidth: "220px",
-                  }}
+                  className="dropdown-menu nav-dropdown-menu"
                 >
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href="/properties"
-                    >
-                      Tất cả bất động sản
-                    </a>
-                  </li>
-
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href="/nearby"
-                    >
-                      Tìm quanh đây
-                    </a>
-                  </li>
-
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href="/amenities"
-                    >
-                      Tiện ích lân cận
-                    </a>
-                  </li>
-
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href="/compare"
-                    >
-                      So sánh hiện tại
-                    </a>
-                  </li>
-
-                  {isCustomer && (
-                    <>
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/lead-form"
-                        >
-                          Gửi nhu cầu tư vấn
-                        </a>
-                      </li>
-
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/appointments/create"
-                        >
-                          Tạo lịch hẹn
-                        </a>
-                      </li>
-                    </>
-                  )}
-
+                  {exploreMenuItems.map((item) => (
+                    <li key={item.href}>
+                      <a
+                        className="dropdown-item"
+                        href={item.href}
+                      >
+                        {item.label}
+                      </a>
+                    </li>
+                  ))}
                 </ul>
               </li>
             </ul>
 
             {/* RIGHT */}
-            <div className="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+            <div className="nav-actions mt-2 mt-lg-0">
               {/* SEARCH */}
-              <div className="d-none d-lg-flex align-items-center gap-2 me-2">
+              <div className="nav-search-shell d-none d-lg-flex align-items-center gap-2 me-2">
                 <form
                   className="nav-search-form"
                   onSubmit={submitNavSearch}
-                  style={{
-                    position: "relative",
-                  }}
                 >
                   <div className="nav-search-wrap">
                     <i className="bi bi-search"></i>
@@ -507,184 +439,91 @@ function Layout({ children }) {
               </div>
 
               {/* THEME */}
-              <button
-                className="nav-icon-btn"
-                id="themeToggle"
-              >
-                <i className="bi bi-moon-stars"></i>
-              </button>
+              <div className="nav-utility-group">
+                {/* WISHLIST */}
+                {showWishlistShortcut && (
+                  <a
+                    className="nav-icon-btn"
+                    href="/wishlist"
+                  >
+                    <i className="bi bi-heart"></i>
+                  </a>
+                )}
+              </div>
 
-              {/* WISHLIST */}
-              <a
-                className="nav-icon-btn"
-                href="/wishlist"
-              >
-                <i className="bi bi-heart"></i>
-              </a>
-
-              {user ? (
+              {isAuthenticated ? (
               <>
-              <div className="dropdown">
-                <a
-                  className="nav-user-box dropdown-toggle text-decoration-none"
-                  href="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
+              <div className="nav-user-dropdown">
+                <button
+                  type="button"
+                  className="nav-user-box nav-user-trigger"
+                  aria-haspopup="menu"
                 >
                   <i className="bi bi-person-circle"></i>
 
                   <span>
                     {user.full_name || user.username}
                   </span>
-                </a>
+                </button>
 
                 <ul
-                  className="dropdown-menu dropdown-menu-end border-0 shadow-sm"
-                  style={{
-                    borderRadius: "14px",
-                    padding: "10px",
-                    minWidth: "220px",
-                  }}
+                  className="dropdown-menu dropdown-menu-end nav-user-menu"
                 >
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href="/profile"
-                    >
-                      Hồ sơ cá nhân
-                    </a>
+                  <li className="nav-user-menu-header">
+                    <span className="nav-user-menu-label">Tài khoản</span>
+                    <strong>{user.full_name || user.username}</strong>
                   </li>
 
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href={dashboardHref}
+                  {userMenuItems.map((item) => (
+                    <li
+                      key={item.href}
+                      className={item.dividerBefore ? "nav-menu-divider" : undefined}
                     >
-                      Trang tổng quan
-                    </a>
-                  </li>
-
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href="/wishlist"
-                    >
-                      Tin đã lưu
-                    </a>
-                  </li>
-
-                  {isCustomer && (
-                    <>
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/lead-form"
-                        >
-                          Gửi yêu cầu tư vấn
-                        </a>
-                      </li>
-
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/appointments/create"
-                        >
-                          Tạo lịch hẹn
-                        </a>
-                      </li>
-                    </>
-                  )}
-
-                  {(isAgent || isAdmin) && (
-                    <li>
                       <a
                         className="dropdown-item"
-                        href="/properties/create"
+                        href={item.href}
                       >
-                        Đăng tin mới
+                        <i className={`bi ${item.icon}`}></i>
+                        {item.label}
                       </a>
                     </li>
-                  )}
+                  ))}
 
-                  {isAdmin && (
-                    <>
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/admin-dashboard"
-                        >
-                          Dashboard quản trị
-                        </a>
-                      </li>
-
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="/admin-console"
-                        >
-                          Admin Console
-                        </a>
-                      </li>
-                    </>
-                  )}
+                  <li className="nav-menu-divider">
+                    <a
+                      className="dropdown-item dropdown-item-danger"
+                      href="/login"
+                      onClick={() => {
+                        api.logout();
+                        localStorage.removeItem("user");
+                        setUser(null);
+                      }}
+                    >
+                      <i className="bi bi-box-arrow-right"></i>
+                      Đăng xuất
+                    </a>
+                  </li>
                 </ul>
               </div>
-
-    {/* LOGOUT */}
-    <a
-      className="btn-geo-danger"
-      href="/login"
-      style={{
-        padding: "9px 14px",
-        fontSize: "13px",
-        borderRadius: "999px",
-      }}
-      onClick={() => {
-        api.logout();
-        localStorage.removeItem("user");
-        setUser(null);
-      }}
-    >
-      Đăng xuất
-    </a>
   </>
 ) : (
-  <>
+  <div className="nav-auth-group">
     {/* LOGIN */}
     <a
-      className="btn-geo-secondary"
+      className="nav-auth-link"
       href="/login"
-      style={{
-        padding: "9px 14px",
-        fontSize: "13px",
-        borderRadius: "999px",
-      }}
     >
       Đăng nhập
     </a>
 
     <a
-      className="btn-admin"
+      className="nav-auth-link nav-auth-link-primary"
       href="/register"
-      style={{
-        padding: "9px 14px",
-      }}
     >
       Đăng ký
     </a>
-  </>
+  </div>
 )}
-
-              
-              {/* CREATE */}
-              {(isAgent || isAdmin) && (
-                <a className="btn-admin" href="/properties/create">
-                  <i className="bi bi-building-add"></i>
-
-                  Đăng tin
-                </a>
-              )}
             </div>
           </div>
         </div>

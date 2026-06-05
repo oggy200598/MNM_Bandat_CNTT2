@@ -107,10 +107,10 @@ export default function LoginPage() {
 
   return (
 
-    <div className="auth-page">
+    <div className="auth-page container py-5">
 
       <form
-        className="auth-card"
+        className="auth-card card border-0 shadow-sm mx-auto p-4 p-md-5"
         onSubmit={submit}
       >
 
@@ -135,6 +135,7 @@ export default function LoginPage() {
           <input
             type="text"
             name="username"
+            className="form-control"
             placeholder="Nhập tài khoản"
             required
           />
@@ -150,6 +151,7 @@ export default function LoginPage() {
           <input
             type="password"
             name="password"
+            className="form-control"
             placeholder="••••••••"
             required
           />
@@ -157,7 +159,7 @@ export default function LoginPage() {
         </label>
 
         <button
-          className="btn-geo-primary full"
+          className="btn-geo-primary btn btn-primary full"
           disabled={loading}
         >
 
@@ -173,7 +175,7 @@ export default function LoginPage() {
 
         <button
           type="button"
-          className="btn-geo-secondary full"
+          className="btn-geo-secondary btn btn-outline-secondary full"
           onClick={() => {
             window.location.href =
               googleLoginUrl;
