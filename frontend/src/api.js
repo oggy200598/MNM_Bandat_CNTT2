@@ -189,9 +189,18 @@ export const api = {
     return result;
   },
   register: async (payload) => {
-    const result = await unwrap(client.post("/auth/register", payload), null);
-    if (result?.token) setToken(result.token);
-    return result;
+    try {
+      const response = await client.post("/auth/register", payload);
+      return response.data?.data ?? response.data;
+    } catch (error) {
+      console.warn("API register failed:", error.message);
+      return {
+        error:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Không thể tạo tài khoản.",
+      };
+    }
   },
   me: () => unwrap(client.get("/auth/me"), null),
   updateProfile: (payload) => unwrap(client.put("/auth/profile", payload), null),

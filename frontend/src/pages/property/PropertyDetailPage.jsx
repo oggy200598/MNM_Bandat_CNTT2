@@ -13,6 +13,7 @@ import PropertyMiniCard
   from "../../components/property/PropertyMiniCard";
 import { sanitizeRichHtml } from "../../utils/richText";
 import "../../App.css";
+import usePageMeta from "../../hooks/usePageMeta";
 
 function ImageUploadForm({ propertyId, onUploaded }) {
   const [file, setFile] = useState(null);
@@ -273,6 +274,23 @@ export default function PropertyDetailPage() {
     activeImageIndex === null
       ? null
       : images[activeImageIndex] || null;
+  const openPrevImage = () => {
+    setActiveImageIndex((current) => {
+      if (current === null || !images.length) return current;
+      return current === 0 ? images.length - 1 : current - 1;
+    });
+  };
+  const openNextImage = () => {
+    setActiveImageIndex((current) => {
+      if (current === null || !images.length) return current;
+      return current === images.length - 1 ? 0 : current + 1;
+    });
+  };
+
+  usePageMeta({
+    title: `${p.title || "Chi tiết bất động sản"} | GeoEstate`,
+    description: `${p.typeText || "Bất động sản"} tại ${p.address || "khu vực đang cập nhật"}, giá ${p.priceText || "liên hệ"}, diện tích ${p.area || "--"} m².`,
+  });
 
   useEffect(() => {
     let active = true;
@@ -316,6 +334,10 @@ export default function PropertyDetailPage() {
     const handleKeydown = (event) => {
       if (event.key === "Escape") {
         setActiveImageIndex(null);
+      } else if (event.key === "ArrowLeft") {
+        openPrevImage();
+      } else if (event.key === "ArrowRight") {
+        openNextImage();
       }
     };
 
@@ -324,7 +346,7 @@ export default function PropertyDetailPage() {
     return () => {
       window.removeEventListener("keydown", handleKeydown);
     };
-  }, [activeImageIndex]);
+  }, [activeImageIndex, images.length]);
 
   async function refreshImages() {
     const data = await api.property(property.id);
@@ -907,6 +929,26 @@ export default function PropertyDetailPage() {
             className="property-lightbox-dialog"
             onClick={(event) => event.stopPropagation()}
           >
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="property-lightbox-nav prev"
+                  onClick={openPrevImage}
+                  aria-label="Ảnh trước"
+                >
+                  <i className="bi bi-chevron-left"></i>
+                </button>
+                <button
+                  type="button"
+                  className="property-lightbox-nav next"
+                  onClick={openNextImage}
+                  aria-label="Ảnh sau"
+                >
+                  <i className="bi bi-chevron-right"></i>
+                </button>
+              </>
+            )}
             <button
               type="button"
               className="property-lightbox-close"
@@ -921,8 +963,25 @@ export default function PropertyDetailPage() {
               alt={activeImage.caption || p.title}
             />
             <div className="property-lightbox-caption">
-              {activeImage.caption || p.title}
+              <strong>{activeImage.caption || p.title}</strong>
+              <span>
+                Ảnh {activeImageIndex + 1} / {images.length}
+              </span>
             </div>
+            {images.length > 1 && (
+              <div className="property-lightbox-strip">
+                {images.map((img, index) => (
+                  <button
+                    key={`${img.id || index}-thumb`}
+                    type="button"
+                    className={`property-lightbox-thumb ${index === activeImageIndex ? "active" : ""}`}
+                    onClick={() => setActiveImageIndex(index)}
+                    style={{ backgroundImage: `url(${img.image})` }}
+                    aria-label={`Mở ảnh ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

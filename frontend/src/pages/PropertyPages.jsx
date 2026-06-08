@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { api, normalizeProperty } from "../api";
 import "../App.css";
 import { stripHtmlTags } from "../utils/richText";
+import usePageMeta from "../hooks/usePageMeta";
 
 const fallbackProperties = [
   {
@@ -168,9 +169,11 @@ async function fetchPlaceSuggestions(query, limit = 5) {
 function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', onBoundsChange, heatMode = false, radiusKm = 0, showRadius = false }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const layersRef = useRef({ markers: null, heat: null, radius: null, centerMarker: null });
+  const layersRef = useRef({ markers: null, heat: null, radius: null });
   const suppressMoveRef = useRef(false);
   const previousCenterRef = useRef(null);
+  const handleZoomIn = () => mapRef.current?.zoomIn();
+  const handleZoomOut = () => mapRef.current?.zoomOut();
 
   useEffect(() => {
     let disposed = false;
@@ -182,7 +185,10 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
         loadScript(HEAT_JS, 'leaflet-heat-js'),
       ]);
       if (disposed || !containerRef.current || !window.L || mapRef.current) return;
-      const map = window.L.map(containerRef.current, { scrollWheelZoom: false }).setView([center.lat, center.lng], 12);
+      const map = window.L.map(containerRef.current, {
+        scrollWheelZoom: false,
+        zoomControl: false,
+      }).setView([center.lat, center.lng], 12);
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors',
@@ -215,7 +221,6 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
     if (prev.markers) prev.markers.remove();
     if (prev.heat) prev.heat.remove();
     if (prev.radius) prev.radius.remove();
-    if (prev.centerMarker) prev.centerMarker.remove();
 
     const cluster = window.L.markerClusterGroup ? window.L.markerClusterGroup() : window.L.layerGroup();
     const heatPoints = [];
@@ -241,15 +246,6 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
     }
 
     if (showRadius && Number.isFinite(center?.lat) && Number.isFinite(center?.lng) && radiusKm > 0) {
-      const centerMarker = window.L.circleMarker([center.lat, center.lng], {
-        radius: 7,
-        color: '#c59d4f',
-        weight: 2,
-        fillColor: '#ffffff',
-        fillOpacity: 1,
-      }).addTo(map);
-      centerMarker.bindPopup('Tâm tìm kiếm');
-
       const radius = window.L.circle([center.lat, center.lng], {
         radius: radiusKm * 1000,
         color: '#c59d4f',
@@ -258,7 +254,6 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
         fillOpacity: 0.14,
       }).addTo(map);
 
-      layersRef.current.centerMarker = centerMarker;
       layersRef.current.radius = radius;
       suppressMoveRef.current = true;
       map.fitBounds(radius.getBounds(), { padding: [24, 24] });
@@ -286,7 +281,17 @@ function LeafletMap({ items, center, height = 420, chip = 'TP.HCM · GIS MAP', o
     }
   }, [items, heatMode, center?.lat, center?.lng, radiusKm, showRadius]);
 
-  return <div className="gis-map-box leaflet-box" style={{ height }}><div ref={containerRef} className="leaflet-map" /><div className="gis-map-overlay" /><div className="gis-map-chip">{chip}</div></div>;
+  return (
+    <div className="gis-map-box leaflet-box" style={{ height }}>
+      <div ref={containerRef} className="leaflet-map" />
+      <div className="gis-map-overlay" />
+      <div className="gis-map-chip">{chip}</div>
+      <div className="gis-map-zoom" aria-label="Điều khiển zoom bản đồ">
+        <button type="button" className="gis-map-zoom-btn" onClick={handleZoomIn} aria-label="Phóng to bản đồ">+</button>
+        <button type="button" className="gis-map-zoom-btn" onClick={handleZoomOut} aria-label="Thu nhỏ bản đồ">-</button>
+      </div>
+    </div>
+  );
 }
 
 
@@ -295,6 +300,8 @@ function PropertyCard({
   compact = false,
   onDelete,
   onWishlist,
+  onCompare,
+  compareActive = false,
   wishlistActive,
   canManageStatus = false,
   onStageChange,
@@ -346,12 +353,19 @@ function PropertyCard({
     Chi tiết
   </a>
 
-  <a
-    className="btn-geo-secondary"
-    href="/compare"
-  >
-    So sánh
-  </a>
+  {onCompare && (
+    <button
+      type="button"
+      className="btn-geo-secondary"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onCompare(property);
+      }}
+    >
+      {compareActive ? "Mở so sánh" : "So sánh"}
+    </button>
+  )}
 
   {onWishlist && (
   <button
@@ -377,11 +391,25 @@ function PropertyCard({
 }
 
 function FilterPanel({ filters, onChange, onSubmit, onReset }) {
+  const activeFilterCount = [
+    filters.type,
+    filters.status,
+    filters.q,
+    filters.priceMin,
+    filters.priceMax,
+    filters.areaMin,
+    filters.areaMax,
+  ].filter(Boolean).length;
+
   return (
-    <aside className="filter-panel">
+    <aside className="filter-panel ui-control-surface is-soft">
       <div className="filter-head">
         <span>⚙️ Bộ lọc</span>
-        <button type="button" onClick={onReset}>Xóa tất cả</button>
+        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onReset}>Xóa tất cả</button>
+      </div>
+      <div className="filter-summary-row">
+        <span className="filter-summary-pill">{activeFilterCount} bộ lọc đang bật</span>
+        <span className="filter-summary-text">Tối ưu theo nhu cầu, ngân sách và diện tích.</span>
       </div>
       <form onSubmit={onSubmit}>
         <div className="filter-section">
@@ -407,22 +435,22 @@ function FilterPanel({ filters, onChange, onSubmit, onReset }) {
 
         <div className="filter-section">
           <label>Từ khóa</label>
-          <input value={filters.q} onChange={(e) => onChange('q', e.target.value)} placeholder="Tiêu đề, địa chỉ..." />
+          <input className="form-control" value={filters.q} onChange={(e) => onChange('q', e.target.value)} placeholder="Tiêu đề, địa chỉ..." />
         </div>
 
         <div className="filter-section">
           <label>Khoảng giá</label>
           <div className="range-inputs">
-            <input value={filters.priceMin} onChange={(e) => onChange('priceMin', e.target.value)} type="number" placeholder="Tối thiểu" />
-            <input value={filters.priceMax} onChange={(e) => onChange('priceMax', e.target.value)} type="number" placeholder="Tối đa" />
+            <input className="form-control" value={filters.priceMin} onChange={(e) => onChange('priceMin', e.target.value)} type="number" placeholder="Tối thiểu" />
+            <input className="form-control" value={filters.priceMax} onChange={(e) => onChange('priceMax', e.target.value)} type="number" placeholder="Tối đa" />
           </div>
         </div>
 
         <div className="filter-section">
           <label>Diện tích</label>
           <div className="range-inputs">
-            <input value={filters.areaMin} onChange={(e) => onChange('areaMin', e.target.value)} type="number" placeholder="Từ m²" />
-            <input value={filters.areaMax} onChange={(e) => onChange('areaMax', e.target.value)} type="number" placeholder="Đến m²" />
+            <input className="form-control" value={filters.areaMin} onChange={(e) => onChange('areaMin', e.target.value)} type="number" placeholder="Từ m²" />
+            <input className="form-control" value={filters.areaMax} onChange={(e) => onChange('areaMax', e.target.value)} type="number" placeholder="Đến m²" />
           </div>
         </div>
 
@@ -448,9 +476,35 @@ function FilterPanel({ filters, onChange, onSubmit, onReset }) {
           </div>
         </div>
 
-        <button type="submit" className="apply-filter">Áp dụng bộ lọc</button>
+        <div className="ui-inline-actions mt-3">
+          <button type="submit" className="apply-filter btn btn-primary">Áp dụng bộ lọc</button>
+          <button type="button" className="btn btn-outline-secondary" onClick={onReset}>Đặt lại nhanh</button>
+        </div>
       </form>
     </aside>
+  );
+}
+
+function PropertyCardSkeleton() {
+  return (
+    <article className="listing-card">
+      <div className="listing-media ui-skeleton" />
+      <div className="listing-body ui-section-stack">
+        <span className="ui-skeleton ui-skeleton-line" style={{ width: "34%" }}></span>
+        <span className="ui-skeleton ui-skeleton-line" style={{ width: "72%", minHeight: 22 }}></span>
+        <span className="ui-skeleton ui-skeleton-line" style={{ width: "56%" }}></span>
+        <div className="listing-meta">
+          <span className="ui-skeleton ui-skeleton-chip" style={{ width: 76 }}></span>
+          <span className="ui-skeleton ui-skeleton-chip" style={{ width: 90 }}></span>
+          <span className="ui-skeleton ui-skeleton-chip" style={{ width: 110 }}></span>
+        </div>
+        <div className="listing-actions">
+          <span className="ui-skeleton ui-skeleton-button" style={{ flex: 1 }}></span>
+          <span className="ui-skeleton ui-skeleton-button" style={{ flex: 1 }}></span>
+          <span className="ui-skeleton ui-skeleton-button" style={{ flex: 1 }}></span>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -502,6 +556,7 @@ function PaginationControls({ pagination, onPageChange, loading }) {
 
 export function PropertyListPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const resultsRef = useRef(null);
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
   const isAdmin = currentUser?.role === "admin";
@@ -528,6 +583,11 @@ export function PropertyListPage() {
       areaMax: params.get("areaMax") || "",
       sort: params.get("sort") || "newest",
     };
+  });
+
+  usePageMeta({
+    title: "Danh sách bất động sản | GeoEstate",
+    description: "Khám phá bất động sản bằng bộ lọc thông minh, bản đồ khu vực, tiện ích lân cận và danh sách được đồng bộ trực tiếp từ hệ thống.",
   });
 
   const syncCollections = async () => {
@@ -674,17 +734,41 @@ useEffect(() => {
     }
     setActionMessage(`Chưa cập nhật được trạng thái cho "${property.title}".`);
   };
-  const toggleWishlist = async (property) => {
+  const openWishlistForProperty = async (property) => {
+    if (wishlistIds.includes(property.id)) {
+      const result = await api.toggleWishlist(property.id);
+      if (result?.ids) setWishlistIds(result.ids);
+      return;
+    }
+
     const result = await api.toggleWishlist(property.id);
-    if (result?.ids) setWishlistIds(result.ids);
+    if (result?.ids) {
+      setWishlistIds(result.ids);
+      navigate("/wishlist");
+    }
   };
   const toggleCompare = async (property) => {
     const result = await api.toggleCompare(property.id);
     if (result?.ids) setCompareIds(result.ids);
   };
+  const openCompareForProperty = async (property) => {
+    if (compareIds.includes(property.id)) {
+      navigate("/compare");
+      return;
+    }
+
+    const result = await api.toggleCompare(property.id);
+    if (result?.ids) {
+      setCompareIds(result.ids);
+      navigate("/compare");
+    }
+  };
   const saveSearch = async () => {
     const result = await api.createSavedSearch({ name: filters.q ? `Tìm: ${filters.q}` : 'Bộ lọc hiện tại', filters: { ...filters, bbox } });
-    if (result?.id) setSavedSearches((prev) => [result, ...prev]);
+    if (result?.id) {
+      setSavedSearches((prev) => [result, ...prev]);
+      navigate("/wishlist");
+    }
   };
 
   return (
@@ -692,7 +776,6 @@ useEffect(() => {
       <PageHero
         eyebrow="Danh sách bất động sản"
         title="Khám phá bất động sản"
-        desc="Danh sách, bản đồ và bộ lọc đang nối trực tiếp vào backend Node.js."
         actions={
           <>
             {canCreateProperty && <a href="/properties/create" className="btn-geo-secondary btn btn-outline-secondary">Đăng tin mới</a>}
@@ -762,15 +845,17 @@ useEffect(() => {
           {actionMessage && <p className="muted-line">{actionMessage}</p>}
 
           <div className="property-card-list">
-            {items.map((property) => (
+            {loading
+              ? Array.from({ length: 6 }, (_, index) => <PropertyCardSkeleton key={`property-skeleton-${index}`} />)
+              : items.map((property) => (
               <PropertyCard
                 property={property}
                 key={property.id}
                 onDelete={isAdmin ? handleDelete : undefined}
                 canDelete={isAdmin}
-                onWishlist={currentUser ? toggleWishlist : undefined}
+                onWishlist={currentUser ? openWishlistForProperty : undefined}
                 wishlistActive={wishlistIds.includes(property.id)}
-                onCompare={toggleCompare}
+                onCompare={openCompareForProperty}
                 compareActive={compareIds.includes(property.id)}
                 canManageStatus={false}
                 onStageChange={undefined}
@@ -1300,7 +1385,21 @@ export function ComparePage() {
 
   const refresh = async () => {
     const data = await api.compare();
-    if (Array.isArray(data) && data.length) setCompareItems(data.slice(0, 3));
+    setCompareItems(Array.isArray(data) ? data.slice(0, 3) : []);
+  };
+
+  const handleRemoveCompare = async (property) => {
+    const confirmed = window.confirm(
+      "Bạn có muốn xóa bất động sản này khỏi danh sách so sánh không?"
+    );
+
+    if (!confirmed) return;
+
+    setCompareItems((prev) =>
+      prev.filter((item) => item.id !== property.id)
+    );
+
+    await api.removeCompare(property.id);
   };
 
 useEffect(() => {
@@ -1331,68 +1430,65 @@ useEffect(() => {
           <a className="btn-geo-secondary" href="/properties">← Quay lại danh sách</a>
         </section>
 
-        <div className="compare-grid">
-          {compareItems.map((property) => {
-            const p = normalizeProperty(property);
-            return (
-              <article className="compare-card" key={property.id}>
-                <div className="compare-card-media" style={{ backgroundImage: `url(${p.imageUrl})` }} />
-                <div className="compare-card-body">
-                  <h3>{property.title}</h3>
-                  <div className="compare-card-badges">
-                    <span>{p.typeText}</span>
-                    <span>{p.statusText}</span>
-                  </div>
-                  <div className="compare-card-price">{p.priceText}</div>
-                  <p>{property.description || property.desc}</p>
-                  <div className="compare-card-meta">
-                    <span>📐 {property.area} m²</span>
-                    <span>👤 {p.agentName}</span>
-                    <span>📍 {property.address}</span>
-                  </div>
-                 <div className="listing-actions">
+        {!compareItems.length ? (
+          <div className="empty-state-panel">
+            Chưa có bất động sản nào trong danh sách so sánh. Hãy bấm `So sánh` từ trang danh sách để thêm bài.
+          </div>
+        ) : (
+          <>
+            <div className="compare-grid">
+              {compareItems.map((property) => {
+                const p = normalizeProperty(property);
+                return (
+                  <article className="compare-card" key={property.id}>
+                    <div className="compare-card-media" style={{ backgroundImage: `url(${p.imageUrl})` }} />
+                    <div className="compare-card-body">
+                      <h3>{property.title}</h3>
+                      <div className="compare-card-badges">
+                        <span>{p.typeText}</span>
+                        <span>{p.statusText}</span>
+                      </div>
+                      <div className="compare-card-price">{p.priceText}</div>
+                      <p>{property.description || property.desc}</p>
+                      <div className="compare-card-meta">
+                        <span>📐 {property.area} m²</span>
+                        <span>👤 {p.agentName}</span>
+                        <span>📍 {property.address}</span>
+                      </div>
+                      <div className="listing-actions">
+                        <button
+                          type="button"
+                          className="btn-geo-secondary danger-btn"
+                          onClick={() => handleRemoveCompare(property)}
+                        >
+                          Bỏ so sánh
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
 
-  <button
-    type="button"
-    className="btn-geo-secondary danger-btn"
-    onClick={() => {
-      setCompareItems((prev) =>
-        prev.filter(
-          (item) => item.id !== property.id
-        )
-      );
-
-      api.removeCompare(property.id);
-
-    }}
-  >
-    Bỏ so sánh
-  </button>
-
-</div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-
-        <div className="compare-table-wrapper">
-          <table className="compare-table">
-            <thead>
-              <tr>
-                <th>Thuộc tính</th>
-                {compareItems.map((property) => <th key={property.id}>{property.title}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              <tr><th>Giá</th>{compareItems.map((p) => <td key={p.id}>{normalizeProperty(p).priceText}</td>)}</tr>
-              <tr><th>Diện tích</th>{compareItems.map((p) => <td key={p.id}>{p.area} m²</td>)}</tr>
-              <tr><th>Loại hình</th>{compareItems.map((p) => <td key={p.id}>{normalizeProperty(p).typeText}</td>)}</tr>
-              <tr><th>Vị trí</th>{compareItems.map((p) => <td key={p.id}>{p.address}</td>)}</tr>
-              <tr><th>Môi giới</th>{compareItems.map((p) => <td key={p.id}>{normalizeProperty(p).agentName}</td>)}</tr>
-            </tbody>
-          </table>
-        </div>
+            <div className="compare-table-wrapper">
+              <table className="compare-table">
+                <thead>
+                  <tr>
+                    <th>Thuộc tính</th>
+                    {compareItems.map((property) => <th key={property.id}>{property.title}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><th>Giá</th>{compareItems.map((p) => <td key={p.id}>{normalizeProperty(p).priceText}</td>)}</tr>
+                  <tr><th>Diện tích</th>{compareItems.map((p) => <td key={p.id}>{p.area} m²</td>)}</tr>
+                  <tr><th>Loại hình</th>{compareItems.map((p) => <td key={p.id}>{normalizeProperty(p).typeText}</td>)}</tr>
+                  <tr><th>Vị trí</th>{compareItems.map((p) => <td key={p.id}>{p.address}</td>)}</tr>
+                  <tr><th>Môi giới</th>{compareItems.map((p) => <td key={p.id}>{normalizeProperty(p).agentName}</td>)}</tr>
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

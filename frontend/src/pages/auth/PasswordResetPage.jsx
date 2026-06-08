@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { api } from "../../api";
 import "../../App.css";
+import usePageMeta from "../../hooks/usePageMeta";
 export default function PasswordResetPage() {
+  usePageMeta({
+    title: "Quên mật khẩu | GeoEstate",
+    description: "Gửi yêu cầu đặt lại mật khẩu để tiếp tục truy cập tài khoản và dữ liệu bất động sản trên GeoEstate.",
+  });
   const [message, setMessage] =
     useState("");
   const [loading, setLoading] =

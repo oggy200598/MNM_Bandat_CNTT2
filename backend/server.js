@@ -1,11 +1,13 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import swaggerUi from "swagger-ui-express";
 
 import { fileURLToPath } from "url";
 
 import apiRoutes from "./src/routes/api.js";
 import authRoutes from "./src/routes/auth.routes.js";
+import openApiDocument from "./src/openapi.js";
 
 const __filename =
   fileURLToPath(import.meta.url);
@@ -40,6 +42,22 @@ app.use(
 app.use(
   "/api",
   apiRoutes
+);
+
+app.get(
+  "/openapi.json",
+  (_req, res) => {
+    res.json(openApiDocument);
+  }
+);
+
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(openApiDocument, {
+    explorer: true,
+    customSiteTitle: "MNM Bandat API Docs",
+  })
 );
 
 app.listen(

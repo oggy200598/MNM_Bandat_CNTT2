@@ -1649,9 +1649,6 @@ export default function AdminConsolePage() {
       <div className="mb-4">
         <p className="section-mini-title">Quản trị hệ thống</p>
         <h1 className="section-heading">Admin Console Suite</h1>
-        <p className="muted-line">
-          Một khu admin riêng để CRUD dữ liệu, kiểm tra vận hành và xem thống kê chi tiết theo từng mảng.
-        </p>
       </div>
 
       <div className="admin-suite-layout">

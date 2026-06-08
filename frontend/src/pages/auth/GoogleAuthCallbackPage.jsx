@@ -85,7 +85,7 @@ export default function GoogleAuthCallbackPage() {
       setRedirect("/dashboard");
     } else {
       setRedirect(
-        "/customer-dashboard"
+        "/"
       );
     }
   }, []);

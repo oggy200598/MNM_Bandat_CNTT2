@@ -295,7 +295,7 @@ router.post(
       if (!user) {
         return res.status(400).json({
           message:
-            "User not found"
+            "Tài khoản không tồn tại."
         });
       }
 
@@ -308,7 +308,7 @@ router.post(
       if (!valid) {
         return res.status(400).json({
           message:
-            "Wrong password"
+            "Mật khẩu không đúng."
         });
       }
 
@@ -519,7 +519,7 @@ router.get(
       if (!user) {
         return res.status(404).json({
           message:
-            "User not found"
+            "Không tìm thấy người dùng."
         });
       }
 
@@ -548,7 +548,7 @@ router.put(
       if (!current) {
         return res.status(404).json({
           message:
-            "User not found"
+            "Không tìm thấy người dùng."
         });
       }
 

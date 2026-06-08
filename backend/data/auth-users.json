@@ -1,5 +1,5 @@
 {
-  "nextId": 37,
+  "nextId": 40,
   "users": [
     {
       "id": 1,
@@ -322,6 +322,33 @@
       "password": "pbkdf2$58cc857452a1d2538aa2616db04161e1$zJTwkhgMk4leG8AKVy3WX2F3CceTgUMEQlEoXm2djKM=",
       "email": "anh.thu36@demo.local",
       "full_name": "Anh Thư",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 37,
+      "username": "Lien",
+      "password": "pbkdf2$9498efa40e4a6a0d293a7030290706a2$2ch45lMqfflwvy/p6B08rEnxiVmeMljDlR3Sit5RKOY=",
+      "email": "nhailin@gmail.com",
+      "full_name": "Nhai",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 38,
+      "username": "testuser_1780831156",
+      "password": "pbkdf2$48ef1aa477e4763e08e810547a664e72$7I8dit7QDAXn6VKBtH8cweypkEjFbIz5IhVgxknqhZI=",
+      "email": "test1780831156@example.com",
+      "full_name": "Test User",
+      "role": "user",
+      "linked_agent_id": null
+    },
+    {
+      "id": 39,
+      "username": "Trinh",
+      "password": "pbkdf2$c006c2e4e9a0cd03b79917462f18f7bf$l1+24bLJv3+TVoMNik+OXoWrw2u6ANua26PLNFJBHkU=",
+      "email": "my@gmail.com",
+      "full_name": "My",
       "role": "user",
       "linked_agent_id": null
     }

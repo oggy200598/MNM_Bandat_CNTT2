@@ -3,13 +3,21 @@ import { Navigate } from "react-router-dom";
 
 import { api } from "../../api";
 import "../../App.css";
+import usePageMeta from "../../hooks/usePageMeta";
 
 export default function RegisterPage() {
+  usePageMeta({
+    title: "Đăng ký tài khoản | GeoEstate",
+    description: "Tạo tài khoản GeoEstate để lưu tin, so sánh bất động sản và nhận tư vấn phù hợp theo nhu cầu của bạn.",
+  });
   const [message, setMessage] = useState("");
   const [redirect, setRedirect] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const submit = async (event) => {
     event.preventDefault();
+    setMessage("");
+    setLoading(true);
 
     const form = new FormData(event.currentTarget);
 
@@ -18,6 +26,7 @@ export default function RegisterPage() {
 
     if (password !== confirm) {
       setMessage("Mật khẩu nhập lại không khớp.");
+      setLoading(false);
       return;
     }
 
@@ -31,32 +40,25 @@ export default function RegisterPage() {
     const result =
       await api.register(payload);
 
+    setLoading(false);
+
     if (
-      result?.token &&
       result?.user
     ) {
-      localStorage.setItem(
-        "user",
-        JSON.stringify(
-          result.user
-        )
-      );
-      window.dispatchEvent(
-        new Event("auth-changed")
-      );
       setMessage("Đăng ký thành công!");
       setRedirect(true);
       return;
     }
 
     setMessage(
-      "Không thể tạo tài khoản."
+      result?.error ||
+        "Không thể tạo tài khoản."
     );
   };
 
   if (redirect) {
     return (
-      <Navigate to="/customer-dashboard" />
+      <Navigate to="/login" />
     );
   }
 
@@ -145,8 +147,11 @@ export default function RegisterPage() {
             <button
               type="submit"
               className="btn-geo-primary btn btn-primary form-wide"
+              disabled={loading}
             >
-              Tạo tài khoản
+              {loading
+                ? "Đang tạo tài khoản..."
+                : "Tạo tài khoản"}
             </button>
           </form>
         </div>

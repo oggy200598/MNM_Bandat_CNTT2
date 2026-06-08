@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { api } from "../../api";
+import usePageMeta from "../../hooks/usePageMeta";
 
 export default function LoginPage() {
+  usePageMeta({
+    title: "Đăng nhập | GeoEstate",
+    description: "Đăng nhập vào GeoEstate để quản lý tin đã lưu, bảng điều khiển cá nhân và các thao tác bất động sản của bạn.",
+  });
 
   const [message, setMessage] =
     useState("");
@@ -82,7 +87,7 @@ export default function LoginPage() {
       } else {
 
         setRedirect(
-          "/customer-dashboard"
+          "/"
         );
 
       }

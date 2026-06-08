@@ -418,7 +418,7 @@ export default function ProfilePage() {
           </form>
 
           <aside className="profile-side-stack">
-            <section className="extra-card profile-side-card">
+            <section id="saved-searches" className="extra-card profile-side-card">
               <div className="profile-section-head compact">
                 <div>
                   <h3>

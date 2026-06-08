@@ -441,11 +441,7 @@ export function PropertyFormPage({ edit = false }) {
         <aside className="extra-card property-form-map-card">
           <div className="property-form-map-head">
             <h3>Xem vị trí trên bản đồ</h3>
-            <p className="long-text">
-              {hasMapPoint
-                ? "Địa chỉ đã được ánh xạ lên bản đồ. Tọa độ được lưu ngầm trong backend và không hiển thị trên form."
-                : "Map sẽ cập nhật ngay khi hệ thống nhận diện được địa chỉ."}
-            </p>
+            {!hasMapPoint && <p className="long-text">Map sẽ cập nhật ngay khi hệ thống nhận diện được địa chỉ.</p>}
           </div>
 
           <iframe className="embed-map mt-card" src={mapSrc} title="Map preview" />

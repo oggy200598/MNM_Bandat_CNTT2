@@ -57,6 +57,28 @@ export default function WishlistPage() {
     loadData();
   }, []);
 
+  async function handleRemoveWishlist(itemId) {
+    const confirmed = window.confirm(
+      "Bạn có muốn xóa bất động sản này khỏi danh sách lưu tin không?"
+    );
+
+    if (!confirmed) return;
+
+    await api.removeWishlist(itemId);
+    await loadData();
+  }
+
+  async function handleRemoveCompare(itemId) {
+    const confirmed = window.confirm(
+      "Bạn có muốn xóa bất động sản này khỏi danh sách so sánh không?"
+    );
+
+    if (!confirmed) return;
+
+    await api.removeCompare(itemId);
+    await loadData();
+  }
+
   return (
     <div className="container py-5">
       <div className="mb-4">
@@ -155,12 +177,10 @@ export default function WishlistPage() {
                       <button
                         type="button"
                         className="btn-geo-secondary"
-                        onClick={async () => {
-                          await api.removeWishlist(
+                        onClick={async () =>
+                          handleRemoveWishlist(
                             item.id
-                          );
-                          await loadData();
-                        }}
+                          )}
                       >
                         Bỏ lưu
                       </button>
@@ -234,12 +254,10 @@ export default function WishlistPage() {
                       <button
                         type="button"
                         className="btn-geo-secondary"
-                        onClick={async () => {
-                          await api.removeCompare(
+                        onClick={async () =>
+                          handleRemoveCompare(
                             item.id
-                          );
-                          await loadData();
-                        }}
+                          )}
                       >
                         Bỏ so sánh
                       </button>

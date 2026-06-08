@@ -473,7 +473,7 @@ function createUser(
 
   if (!username) {
     throw new Error(
-      "username is required"
+      "Vui lòng nhập tên tài khoản."
     );
   }
 
@@ -481,7 +481,7 @@ function createUser(
     !payload.password
   ) {
     throw new Error(
-      "password is required"
+      "Vui lòng nhập mật khẩu."
     );
   }
 
@@ -491,7 +491,7 @@ function createUser(
     )
   ) {
     throw new Error(
-      "username already exists"
+      "Tên tài khoản này đã tồn tại."
     );
   }
 
@@ -579,7 +579,7 @@ function updateUser(
 
     if (conflict) {
       throw new Error(
-        "username already exists"
+        "Tên tài khoản này đã tồn tại."
       );
     }
 
